@@ -13,3 +13,6 @@ class Books(models.Model):
 
     def __str__(self):
         return self.name
+
+def get_item(item_id):
+    return Books.objects.get(pk=item_id)

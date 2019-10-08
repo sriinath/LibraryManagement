@@ -1,0 +1,122 @@
+<div>
+    {% if is_authenticated %}
+        <div class='home_wrapper'>
+            <div class='user'>Welcome, {{user}}</div>
+            <a class='home_link' href='\logout'>Logout</a>
+        </div>
+        <div class='books_wrapper'>
+            {% for book in data %}
+                <div class='books_cont'>
+                    <div class='book_main'>
+                        {% if book.author %}
+                            <div class='book_item'>{{book.author}}</div>
+                        {% endif %}
+                        {% if book.description %}
+                            <div class='book_item'>{{book.description}}</div>
+                        {% endif %}
+                        <div class='add_btn'>Add</div>
+                    </div>
+                    {%  if book.name %}
+                        <div class='book_title'>{{book.name}}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class='home_wrapper'>
+            <a class='home_link' href='\login'>Login</a>
+            <a class='home_link' href='\signup'>Sign Up</a>
+        </div>
+    {% endif %}
+</div>
+<style>
+    body {
+        background-color: #f9f9f9;
+    }
+    .user {
+        color: #fff;
+    }
+    .home_wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        width: 100%;
+        margin: auto;
+        background-color: #303237;
+        padding: 5px;
+        border-bottom: 1px solid #f1f1f2;
+    }
+    .home_link {
+        text-decoration: none;
+        color: #4fbc9a;
+        background-color: #fff;
+        padding: 10px;
+        border: 1px solid #4fbc9a;
+        margin-left: 10px;
+        border-radius: 5px;
+    }
+    .home_link:hover {
+        color: #fff;
+        border: 1px solid #f1f1f2;
+        background-color: #4fbc9a;
+    }
+    .add_btn {
+        display: none;
+        width: 90px;
+        background-color: #FF7054;
+        color: #fff;
+        padding: 5px;
+        text-align: center;
+        margin: 15px auto;
+        border-radius: 5px;
+        cursor: pointer;
+        border: 1px solid #FF7054; 
+    }
+    .add_btn:hover {
+        background-color: #fff;
+        color: #FF7054;
+    }
+    .books_cont:hover .add_btn {
+        display: block;
+    }
+    .books_wrapper {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .books_cont {
+        width: 250px;
+        margin: 10px;
+        height: max-content;
+        border: 1px solid #4fbc9a;
+        transition: box-shadow .3s;
+        cursor: default;
+    }
+    .books_cont:hover {
+        box-shadow: 0 0 7px 5px #a3a3a3;
+    }
+    .book_main {
+        color: #303237;
+        box-sizing: border-box;
+        padding: 10px;
+        background-color: #fff;
+    }
+    .book_title {
+        color: #fff;
+        background-color: #4fbc9a;
+        box-sizing: border-box;
+        padding: 20px;
+        font-family: sans-serif;
+        text-align: center;
+        border-radius: 10px 10px 0px 0px;
+    }
+    .book_item {
+        padding-bottom: 5px;
+        color: #064559;
+        font-family: sans-serif;
+        font-size: 14px;
+    }
+    .book_item:first-child {
+        font-weight: bold;
+        padding-bottom: 10px;
+    }
+</style>
