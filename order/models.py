@@ -23,19 +23,27 @@ def add_book(req):
         if(postBody):
             user_id = postBody.get('user_id')
             book_id = postBody.get('book_id')
-            bookIns = get_book(item_id=book_id)
-            userIns = get_user(item_id=user_id)
-            result = add_order(userObj=userIns, bookObj=bookIns)
-            if(result):
-                return HttpResponse('Success from add_order')
-            else:
-                return HttpResponse('Result failure from add_order')
+            try:
+                bookIns = get_book(item_id=book_id)
+                try:
+                    userIns = get_user(item_id=user_id)
+                    result = add_order(userObj=userIns, bookObj=bookIns)
+                    if(result):
+                        return HttpResponse('Success from add_order')
+                    else:
+                        return HttpResponse('Result failure from add_order')
+                except Users.DoesNotExist:
+                    print('User does not exist with' + str(user_id))
+            except Books.DoesNotExist:      
+                print('Book does not exist with' + str(book_id))
     return HttpResponse('Failed to process')
 
 def add_order(userObj, bookObj):
     st_date = timezone.now()
     en_date = st_date + timezone.timedelta(days=15)
-    order = Order(start_date=st_date, end_date=en_date, book_id=bookObj, user_id=userObj)
-    order.save()
-    # Need to validate whether db is successfully saved
-    return True
+    if(not Order.objects.filter(book_id=bookObj, user_id=userObj).exists()):
+        order = Order(start_date=st_date, end_date=en_date, book_id=bookObj, user_id=userObj)
+        order.save()
+        return True
+    else:
+        return False
