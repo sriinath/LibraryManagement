@@ -4,6 +4,7 @@
             <div class='user'>Welcome, {{user}}</div>
             <a class='home_link' href='\logout'>Logout</a>
         </div>
+        <div id='message_content'></div>
         <div class='books_wrapper'>
             {% for book in data %}
                 <div class='books_cont'>
@@ -14,7 +15,7 @@
                         {% if book.description %}
                             <div class='book_item'>{{book.description}}</div>
                         {% endif %}
-                        <div class='add_btn'>Add</div>
+                        <div class='add_btn' onclick="add_book_to_cart('{{ book.book_id }}', '{{ user.user_id }}')">Add</div>
                     </div>
                     {%  if book.name %}
                         <div class='book_title'>{{book.name}}</div>
@@ -119,4 +120,62 @@
         font-weight: bold;
         padding-bottom: 10px;
     }
+    #message_content {
+        transform: translate(0px, -100px);
+        transition: all .5s;
+        text-align: center;
+        padding: 15px;
+        font-family: sans-serif;
+        opacity: 0;
+        color: #d81616;
+        font-weight: bold;
+        font-size: 18px;
+        width: fit-content;
+        border: 1px solid;
+        margin: auto;
+        border-radius: 5px;
+    }
 </style>
+<script>
+    function getCookie(c_name) {
+        if(document.cookie.length > 0) {
+            c_start = document.cookie.indexOf(c_name + "=");
+            if(c_start != -1) {
+                c_start = c_start + c_name.length + 1;
+                c_end = document.cookie.indexOf(";", c_start);
+                if(c_end == -1) c_end = document.cookie.length;
+                return unescape(document.cookie.substring(c_start,c_end));
+            }
+        }
+        return "";
+    }
+    const add_book_to_cart = (book_id, user_id) => {
+        let form = new FormData()
+        let msgEl = document.getElementById('message_content')
+        msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+        form.append('user_id', user_id)
+        form.append('book_id', book_id)
+        fetch('/order/add', {
+            method: 'POST',
+            body: form,
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken")
+            }
+        })
+        .then(data => data.json())
+        .then(resp => {
+            if(resp && resp.status && resp.status.toLowerCase() === 'success') {
+                msgEl.innerText = 'Successfully added the book to order'
+                
+                setTimeout(() => {
+                    msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+                }, 5000)
+            }
+            else if(resp && resp.message && resp.message.trim().length) {
+                msgEl.innerText = resp.message
+            }
+            msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
+        })
+        .catch(err => console.log(err))
+    }
+</script>

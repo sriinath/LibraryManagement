@@ -12,10 +12,10 @@ class Users(AbstractUser):
     user_id = models.AutoField(primary_key= True)
     gender = models.TextField(choices=choiceGender)
     phone = models.IntegerField(null=True)
-    outstanding_balance = models.FloatField(default=0.0)
+    books_info = models.ManyToManyField('books.Books', through='order.Order')
 
     def __str__(self):
-        return self.username
+        return self.user_id
 
 def get_item(item_id):
     return Users.objects.get(pk=item_id)

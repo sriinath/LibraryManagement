@@ -1,6 +1,6 @@
 from django.urls import path
-from . import views
+from . import api
 
 urlpatterns = [
-    path('', views.index)
+    path('get', api.get_books)
 ]

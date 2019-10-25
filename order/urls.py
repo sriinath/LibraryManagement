@@ -1,6 +1,6 @@
 from django.urls import path
-from . import models
+from .api import add_book
 
 urlpatterns = [
-    path('order/add', models.add_book)
+    path('add', add_book)
 ]
