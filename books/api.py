@@ -1,5 +1,6 @@
 from django.http import HttpResponse, JsonResponse
-from django.db.models import Q, Count, When, Case, Value, BooleanField, F
+from django.utils import timezone
+from django.db.models import Q, Count, When, Case, Value, BooleanField, F, FilteredRelation
 from .models import Books
 
 def get_books(req):
@@ -11,16 +12,19 @@ def get_books(req):
             limit = 10
             offset= 0
             if(postBody):
-                limit = postBody.get('limit')
-                offset = postBody.get('offset')
+                limit = int(postBody.get('limit') or limit)
+                offset = int(postBody.get('offset') or offset)
             start_idx = offset * limit
             end_idx = start_idx + limit
             books_data = Books.objects.all()[start_idx : end_idx]
             books_data = books_data.annotate(
                 count=Count('user_info'),
-                user_count=Count('user_info',condition=Q(user_info__user_id=user_id))
+                user_list=FilteredRelation('order',condition=Q(users__user_id=user_id))
             ).annotate(
-                user_bought= Case(
+                user_count=Count('user_list'),
+                expiry_date=F('user_list__end_date')
+            ).annotate(
+                user_bought=Case(
                     When(
                         user_count__gt=0, then=Value(True)
                     ),
@@ -33,6 +37,13 @@ def get_books(req):
                     ),
                     default=Value(False),
                     output_field=BooleanField()
+                ),
+                is_expired=Case(
+                    When(
+                        expiry_date__lt=timezone.now(), then=Value(True)
+                    ),
+                    default=Value(False),
+                    output_field=BooleanField()
                 )
             ).values(
                 'book_id',
@@ -40,9 +51,16 @@ def get_books(req):
                 'description',
                 'author',
                 'user_bought',
-                'in_stock'
+                'in_stock',
+                'is_expired'
             )
-            return JsonResponse(list(books_data), safe=False)
+            return JsonResponse({
+                'data': list(books_data),
+                'status': 'success'
+            },
+            status=200,
+            safe=False
+            )
         else:
             return JsonResponse({
                 'status': 'failure',

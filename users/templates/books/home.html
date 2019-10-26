@@ -1,28 +1,10 @@
-<div>
+<div id="root">
     {% if is_authenticated %}
         <div class='home_wrapper'>
             <div class='user'>Welcome, {{user}}</div>
             <a class='home_link' href='\logout'>Logout</a>
         </div>
         <div id='message_content'></div>
-        <div class='books_wrapper'>
-            {% for book in data %}
-                <div class='books_cont'>
-                    <div class='book_main'>
-                        {% if book.author %}
-                            <div class='book_item'>{{book.author}}</div>
-                        {% endif %}
-                        {% if book.description %}
-                            <div class='book_item'>{{book.description}}</div>
-                        {% endif %}
-                        <div class='add_btn' onclick="add_book_to_cart('{{ book.book_id }}', '{{ user.user_id }}')">Add</div>
-                    </div>
-                    {%  if book.name %}
-                        <div class='book_title'>{{book.name}}</div>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        </div>
     {% else %}
         <div class='home_wrapper'>
             <a class='home_link' href='\login'>Login</a>
@@ -135,8 +117,24 @@
         margin: auto;
         border-radius: 5px;
     }
+    .no_stock,
+    .expired {
+        color: #d81616;
+        font-family: sans-serif;
+        font-size: 16px;
+        padding: 10px;
+        text-align: center;
+        font-weight: bold;
+    }
+    .expired {
+        text-align: left;
+    }
+
 </style>
 <script>
+    sessionStorage.setItem('user_id', '{{user_id}}')
+    const limit = 15,
+        offset=0
     function getCookie(c_name) {
         if(document.cookie.length > 0) {
             c_start = document.cookie.indexOf(c_name + "=");
@@ -149,7 +147,8 @@
         }
         return "";
     }
-    const add_book_to_cart = (book_id, user_id) => {
+    const add_book_to_cart = (book_id, Btn_el) => {
+        let user_id = sessionStorage.getItem('user_id')
         let form = new FormData()
         let msgEl = document.getElementById('message_content')
         msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
@@ -166,7 +165,7 @@
         .then(resp => {
             if(resp && resp.status && resp.status.toLowerCase() === 'success') {
                 msgEl.innerText = 'Successfully added the book to order'
-                
+                Btn_el.style="opacity:.5; pointer-events: none;"
                 setTimeout(() => {
                     msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
                 }, 5000)
@@ -178,4 +177,57 @@
         })
         .catch(err => console.log(err))
     }
+    const DOMNode = document.createElement('div')
+    DOMNode.classList.add('books_wrapper')
+    fetch('/books/get?limit=' + limit + '&offset=' + offset)
+    .then (data => data.json())
+    .then(resp => {
+        if(resp && resp.status && resp.status.toLowerCase() === 'success' && resp.data && resp.data.length) {
+            resp.data.map(node => {
+                let authorEl = document.createElement('div')
+                authorEl.classList.add('book_item')
+                authorEl.innerText=node.author || ''
+                let desc_el = document.createElement('div')
+                desc_el.classList.add('book_item')
+                desc_el.innerText=node.description || ''
+                let Btn_el = document.createElement('div')
+                if(node.user_bought) {
+                    if(node.is_expired) {
+                        Btn_el.innerText='Subsciption is Expired!!!'
+                        Btn_el.classList.add('expired')
+                    }
+                    else {
+                        Btn_el.classList.add('add_btn')
+                        Btn_el.innerText='Add'
+                        Btn_el.style="opacity:.5; pointer-events: none;"
+                    }
+                }
+                else if(node.in_stock) {
+                    Btn_el.classList.add('add_btn')
+                    Btn_el.innerText='Add'
+                    Btn_el.addEventListener('click', () => add_book_to_cart(node.book_id, Btn_el))
+                }
+                else {
+                    Btn_el.classList.add('no_stock')
+                    Btn_el.innerText='Out Of Stock'
+                }
+                let MainEl = document.createElement('div')
+                MainEl.classList.add('book_main')
+                let title_el = document.createElement('div')
+                title_el.classList.add('book_title')
+                title_el.innerText = node.name || ''
+                let ContainerEl = document.createElement('div')
+                ContainerEl.classList.add('books_cont')
+                MainEl.append(
+                    authorEl,
+                    desc_el,
+                    Btn_el
+                )
+                ContainerEl.append(MainEl)
+                ContainerEl.append(title_el)
+                DOMNode.append(ContainerEl)
+            })
+            document.getElementById('root').append(DOMNode)
+        }
+    })
 </script>

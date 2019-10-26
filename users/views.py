@@ -21,12 +21,12 @@ def index(req):
     userData = req.user
     if(userData.is_authenticated):
         data = {
-            'is_authenticated': req.user.is_authenticated,
-            'user': req.user
+            'is_authenticated': userData.is_authenticated,
+            'user': userData,
+            'user_id': userData.user_id
         }
     else:
         data = {
-            'is_authenticated': req.user.is_authenticated,
-            'user': req.user
+            'is_authenticated': userData.is_authenticated
         }
     return render(req, 'books/home.html', data)

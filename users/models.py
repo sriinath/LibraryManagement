@@ -15,7 +15,7 @@ class Users(AbstractUser):
     books_info = models.ManyToManyField('books.Books', through='order.Order')
 
     def __str__(self):
-        return self.user_id
+        return self.username
 
 def get_item(item_id):
     return Users.objects.get(pk=item_id)
