@@ -1,6 +1,7 @@
 from django.db import models
 from books.models import Books
 from users.models import Users
+from django.utils import timezone
 
 # Create your models here.
 class Order(models.Model):
@@ -13,3 +14,6 @@ class Order(models.Model):
 
     def __str__(self):
         return str(self.cart_id)
+
+    def is_expired(self):
+        return self.end_date < timezone.now()

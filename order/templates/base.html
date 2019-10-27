@@ -1,0 +1,89 @@
+<div id="root">
+    {% if is_authenticated %}
+        <div class='home_wrapper'>
+            <div class='user'>Welcome, {{user}}</div>
+            <a class='home_link' href='\logout'>Logout</a>
+        </div>
+    {% else %}
+        <div class='home_wrapper'>
+            <a class='home_link' href='\login'>Login</a>
+            <a class='home_link' href='\signup'>Sign Up</a>
+        </div>
+    {% endif %}
+    <div id="content" class='main_wrapper'>
+        <div class="sidebar">
+            <a class='order_details' href='/order/view'>My Orders ({{ order_count }})</a>
+            <div class='balance'>Outstanding Balance - <span>{{balance}}</span></div>
+        </div>
+        {% block content %}
+        {% endblock %}
+    </div>
+</div>
+<style>
+    body {
+        background-color: #f9f9f9;
+    }
+    .user {
+        color: #fff;
+    }
+    .home_wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        width: 100%;
+        margin: auto;
+        /* background-color: #303237; */
+        background-color: #064559;
+        padding: 15px;
+        box-sizing: border-box;
+        border-bottom: 1px solid #f1f1f2;
+    }
+    .home_link {
+        text-decoration: none;
+        color: #064559;
+        background-color: #fff;
+        padding: 10px;
+        border: 1px solid #fff;
+        margin-left: 10px;
+        border-radius: 5px;
+    }
+    .home_link:hover {
+        color: #fff;
+        border: 1px solid #f1f1f2;
+        background-color: #064559;
+    }
+    .main_wrapper {
+        display: flex;
+        min-height: calc(100% - 70px);
+    }
+    .sidebar {
+        width: 15%;
+        padding: 15px;
+        border-right: 1px solid #a9a9a9;
+    }
+    .order_details {
+        font-size: 16px;
+        font-family: sans-serif;
+        padding: 10px 0px;
+        width: 100%;
+        display: block;
+        box-sizing: border-box;
+        color: #333;
+    }
+    .balance {
+        font-size: 16px;
+        font-family: sans-serif;
+        padding: 10px 0px;
+        width: 100%;
+        display: block;
+        box-sizing: border-box;
+        color: #333;
+    }
+    .balance span {
+        font-weight: bold;
+        font-size: 18px;
+    }
+</style>
+<script>
+    sessionStorage.setItem('user_id', '{{user_id}}')
+</script>

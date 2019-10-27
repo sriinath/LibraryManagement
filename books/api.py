@@ -22,18 +22,12 @@ def get_books(req):
                 user_list=FilteredRelation('order',condition=Q(users__user_id=user_id))
             ).annotate(
                 user_count=Count('user_list'),
-                expiry_date=F('user_list__end_date')
+                expiry_date=F('user_list__end_date'),
+                stock=F('stock_count') - F('count')
             ).annotate(
                 user_bought=Case(
                     When(
                         user_count__gt=0, then=Value(True)
-                    ),
-                    default=Value(False),
-                    output_field=BooleanField()
-                ),
-                in_stock=Case(
-                    When(
-                        count__lt=F('stock_count'), then=Value(True)
                     ),
                     default=Value(False),
                     output_field=BooleanField()
@@ -51,7 +45,8 @@ def get_books(req):
                 'description',
                 'author',
                 'user_bought',
-                'in_stock',
+                'expiry_date',
+                'stock',
                 'is_expired'
             )
             return JsonResponse({

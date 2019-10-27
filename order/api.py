@@ -5,6 +5,7 @@ from books.models import get_item as get_book
 from books.models import Books
 from users.models import Users
 from .models import Order
+from django.db.models import F, When, Case, Value, IntegerField, FilteredRelation, Q, BooleanField
 
 def add_book(req):
     if(req.method == 'POST'):
@@ -72,3 +73,35 @@ def add_order(userObj, bookObj):
     except Exception as e:
         print(e)
         return False
+
+def get_order_details(req):
+    if(req.method == 'GET'):
+        user_info = req.user
+        order_info = user_info.order_set.annotate(
+            name=F('books__name'),
+            author=F('books__author'),
+            due_date=F('end_date'),
+            is_expired=Case(
+                When(end_date__lt=timezone.now(), then=Value(True)),
+                default=False,
+                output_field=BooleanField()
+            ),
+            outstanding_days=Case(
+                When(end_date__lt=timezone.now(), then=F('end_date') - timezone.now().date()),
+                output_field=IntegerField()
+            )
+        ).values(
+            'start_date',
+            'end_date',
+            'name',
+            'author',
+            'outstanding_days',
+            'is_expired'
+        )
+        return JsonResponse({
+            'data': list(order_info),
+            'status': 'success'
+        },
+        status=200
+        )
+    return HttpResponse('Sending HTTP response since it is not post request')

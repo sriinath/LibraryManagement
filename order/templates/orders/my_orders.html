@@ -1,0 +1,85 @@
+{% extends "../base.html" %}
+{% block content %}
+    <div id='mainbar'></div>
+    <style>
+        #mainbar {
+            padding: 15px;
+            width: 85%;
+        }
+        .title {
+            padding: 10px;
+            font-weight: bold;
+            font-family: sans-serif;
+            font-size: 20px;
+            color: #555;
+        }
+        .order_wrapper {
+            display: table;
+            width: 100%;
+        }
+        .order_wrapper td {
+            text-align: center;
+        }
+    </style>
+    <script>
+        const DOMNode = document.createElement('table')
+        DOMNode.classList.add('order_wrapper')
+        fetch('/order/get')
+        .then (data => data.json())
+        .then(resp => {
+            if(resp && resp.status && resp.status.toLowerCase() === 'success' && resp.data && resp.data.length) {
+                let row_el = document.createElement('tr')
+                let book_name = document.createElement('th')
+                book_name.innerText = 'Name'
+                let author_name = document.createElement('th')
+                author_name.innerText = 'Author'
+                let start_date = document.createElement('th')
+                start_date.innerText = 'Start Date'
+                let end_date = document.createElement('th')
+                end_date.innerText = 'End Date'
+                let expired = document.createElement('th')
+                expired.innerText = 'Is Expired?'
+                let outstanding_days = document.createElement('th')
+                outstanding_days.innerText = 'Outstandng Days'
+                row_el.append(
+                    book_name,
+                    author_name,
+                    start_date,
+                    end_date,
+                    expired,
+                    outstanding_days
+                )
+                DOMNode.append(row_el)
+                resp.data.map(node => {
+                    row_el = document.createElement('tr')
+                    book_name = document.createElement('td')
+                    book_name.innerText = node.name || ''
+                    author_name = document.createElement('td')
+                    author_name.innerText = node.author || ''
+                    start_date = document.createElement('td')
+                    start_date.innerText = node.start_date || ''
+                    end_date = document.createElement('td')
+                    end_date.innerText = node.end_date || ''
+                    expired = document.createElement('td')
+                    expired.innerText = node.is_expired ? 'Yes' : 'No'
+                    outstanding_days = document.createElement('td')
+                    outstanding_days.innerText = node.is_expired && node.outstanding_days ? Math.abs(node.outstanding_days) : '-'
+                    row_el.append(
+                        book_name,
+                        author_name,
+                        start_date,
+                        end_date,
+                        expired,
+                        outstanding_days
+                    )
+                    DOMNode.append(row_el)
+                })
+                let title_el = document.createElement('div')
+                title_el.innerText='Orders'
+                title_el.classList.add('title')
+                document.getElementById('mainbar').append(title_el)
+                document.getElementById('mainbar').append(DOMNode)
+            }
+        })
+    </script>
+{% endblock %}

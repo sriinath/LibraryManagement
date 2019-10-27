@@ -1,233 +1,184 @@
-<div id="root">
-    {% if is_authenticated %}
-        <div class='home_wrapper'>
-            <div class='user'>Welcome, {{user}}</div>
-            <a class='home_link' href='\logout'>Logout</a>
-        </div>
-        <div id='message_content'></div>
-    {% else %}
-        <div class='home_wrapper'>
-            <a class='home_link' href='\login'>Login</a>
-            <a class='home_link' href='\signup'>Sign Up</a>
-        </div>
-    {% endif %}
-</div>
-<style>
-    body {
-        background-color: #f9f9f9;
-    }
-    .user {
-        color: #fff;
-    }
-    .home_wrapper {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        width: 100%;
-        margin: auto;
-        background-color: #303237;
-        padding: 5px;
-        border-bottom: 1px solid #f1f1f2;
-    }
-    .home_link {
-        text-decoration: none;
-        color: #4fbc9a;
-        background-color: #fff;
-        padding: 10px;
-        border: 1px solid #4fbc9a;
-        margin-left: 10px;
-        border-radius: 5px;
-    }
-    .home_link:hover {
-        color: #fff;
-        border: 1px solid #f1f1f2;
-        background-color: #4fbc9a;
-    }
-    .add_btn {
-        display: none;
-        width: 90px;
-        background-color: #FF7054;
-        color: #fff;
-        padding: 5px;
-        text-align: center;
-        margin: 15px auto;
-        border-radius: 5px;
-        cursor: pointer;
-        border: 1px solid #FF7054; 
-    }
-    .add_btn:hover {
-        background-color: #fff;
-        color: #FF7054;
-    }
-    .books_cont:hover .add_btn {
-        display: block;
-    }
-    .books_wrapper {
-        display: flex;
-        flex-wrap: wrap;
-    }
-    .books_cont {
-        width: 250px;
-        margin: 10px;
-        height: max-content;
-        border: 1px solid #4fbc9a;
-        transition: box-shadow .3s;
-        cursor: default;
-    }
-    .books_cont:hover {
-        box-shadow: 0 0 7px 5px #a3a3a3;
-    }
-    .book_main {
-        color: #303237;
-        box-sizing: border-box;
-        padding: 10px;
-        background-color: #fff;
-    }
-    .book_title {
-        color: #fff;
-        background-color: #4fbc9a;
-        box-sizing: border-box;
-        padding: 20px;
-        font-family: sans-serif;
-        text-align: center;
-        border-radius: 10px 10px 0px 0px;
-    }
-    .book_item {
-        padding-bottom: 5px;
-        color: #064559;
-        font-family: sans-serif;
-        font-size: 14px;
-    }
-    .book_item:first-child {
-        font-weight: bold;
-        padding-bottom: 10px;
-    }
-    #message_content {
-        transform: translate(0px, -100px);
-        transition: all .5s;
-        text-align: center;
-        padding: 15px;
-        font-family: sans-serif;
-        opacity: 0;
-        color: #d81616;
-        font-weight: bold;
-        font-size: 18px;
-        width: fit-content;
-        border: 1px solid;
-        margin: auto;
-        border-radius: 5px;
-    }
-    .no_stock,
-    .expired {
-        color: #d81616;
-        font-family: sans-serif;
-        font-size: 16px;
-        padding: 10px;
-        text-align: center;
-        font-weight: bold;
-    }
-    .expired {
-        text-align: left;
-    }
-
-</style>
-<script>
-    sessionStorage.setItem('user_id', '{{user_id}}')
-    const limit = 15,
-        offset=0
-    function getCookie(c_name) {
-        if(document.cookie.length > 0) {
-            c_start = document.cookie.indexOf(c_name + "=");
-            if(c_start != -1) {
-                c_start = c_start + c_name.length + 1;
-                c_end = document.cookie.indexOf(";", c_start);
-                if(c_end == -1) c_end = document.cookie.length;
-                return unescape(document.cookie.substring(c_start,c_end));
-            }
+{% extends "../base.html" %}
+{% block content %}
+    <div id='mainbar'></div>
+    <style>
+        #mainbar {
+            padding: 15px;
+            width: 85%;
         }
-        return "";
-    }
-    const add_book_to_cart = (book_id, Btn_el) => {
-        let user_id = sessionStorage.getItem('user_id')
-        let form = new FormData()
-        let msgEl = document.getElementById('message_content')
-        msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
-        form.append('user_id', user_id)
-        form.append('book_id', book_id)
-        fetch('/order/add', {
-            method: 'POST',
-            body: form,
-            headers: {
-                "X-CSRFToken": getCookie("csrftoken")
+        .title {
+            padding: 10px;
+            font-weight: bold;
+            font-family: sans-serif;
+            font-size: 20px;
+            color: #555;
+        }
+        .books_wrapper {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .books_cont {
+            width: 250px;
+            margin: 10px;
+            height: max-content;
+            border: 1px solid #4fbc9a;
+            transition: box-shadow .3s;
+            cursor: default;
+        }
+        .books_cont:hover {
+            box-shadow: 0 0 7px 5px #a3a3a3;
+        }
+        .book_main {
+            color: #303237;
+            box-sizing: border-box;
+            padding: 10px;
+            background-color: #fff;
+        }
+        .book_title {
+            color: #fff;
+            background-color: #4fbc9a;
+            box-sizing: border-box;
+            padding: 20px;
+            font-family: sans-serif;
+            text-align: center;
+            border-radius: 10px 10px 0px 0px;
+        }
+        .book_item {
+            padding-bottom: 5px;
+            color: #064559;
+            font-family: sans-serif;
+            font-size: 14px;
+        }
+        .book_item:first-child {
+            font-weight: bold;
+            padding-bottom: 10px;
+        }
+        .no_stock,
+        .expired {
+            color: #d81616;
+            font-family: sans-serif;
+            font-size: 16px;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .expired {
+            text-align: left;
+        }
+        .book_info {
+            display: none;
+            font-family: sans-serif;
+            font-size: 16px;
+            padding: 10px 0px;
+            font-weight: bold;
+            color: #000;
+        }
+        .book_main:hover .book_info {
+            display: block;
+        }
+    </style>
+    <script>
+        sessionStorage.setItem('user_id', '{{user_id}}')
+        const limit = 15,
+            offset=0
+        function getCookie(c_name) {
+            if(document.cookie.length > 0) {
+                c_start = document.cookie.indexOf(c_name + "=");
+                if(c_start != -1) {
+                    c_start = c_start + c_name.length + 1;
+                    c_end = document.cookie.indexOf(";", c_start);
+                    if(c_end == -1) c_end = document.cookie.length;
+                    return unescape(document.cookie.substring(c_start,c_end));
+                }
             }
-        })
-        .then(data => data.json())
+            return "";
+        }
+        const add_book_to_cart = (book_id, Btn_el) => {
+            let user_id = sessionStorage.getItem('user_id')
+            let form = new FormData()
+            let msgEl = document.getElementById('message_content')
+            msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+            form.append('user_id', user_id)
+            form.append('book_id', book_id)
+            fetch('/order/add', {
+                method: 'POST',
+                body: form,
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            })
+            .then(data => data.json())
+            .then(resp => {
+                if(resp && resp.status && resp.status.toLowerCase() === 'success') {
+                    msgEl.innerText = 'Successfully added the book to order'
+                    Btn_el.style="opacity:.5; pointer-events: none;"
+                    setTimeout(() => {
+                        msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+                    }, 5000)
+                }
+                else if(resp && resp.message && resp.message.trim().length) {
+                    msgEl.innerText = resp.message
+                }
+                msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
+            })
+            .catch(err => console.log(err))
+        }
+        const DOMNode = document.createElement('div')
+        DOMNode.classList.add('books_wrapper')
+        fetch('/books/get?limit=' + limit + '&offset=' + offset)
+        .then (data => data.json())
         .then(resp => {
-            if(resp && resp.status && resp.status.toLowerCase() === 'success') {
-                msgEl.innerText = 'Successfully added the book to order'
-                Btn_el.style="opacity:.5; pointer-events: none;"
-                setTimeout(() => {
-                    msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
-                }, 5000)
-            }
-            else if(resp && resp.message && resp.message.trim().length) {
-                msgEl.innerText = resp.message
-            }
-            msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
-        })
-        .catch(err => console.log(err))
-    }
-    const DOMNode = document.createElement('div')
-    DOMNode.classList.add('books_wrapper')
-    fetch('/books/get?limit=' + limit + '&offset=' + offset)
-    .then (data => data.json())
-    .then(resp => {
-        if(resp && resp.status && resp.status.toLowerCase() === 'success' && resp.data && resp.data.length) {
-            resp.data.map(node => {
-                let authorEl = document.createElement('div')
-                authorEl.classList.add('book_item')
-                authorEl.innerText=node.author || ''
-                let desc_el = document.createElement('div')
-                desc_el.classList.add('book_item')
-                desc_el.innerText=node.description || ''
-                let Btn_el = document.createElement('div')
-                if(node.user_bought) {
-                    if(node.is_expired) {
-                        Btn_el.innerText='Subsciption is Expired!!!'
-                        Btn_el.classList.add('expired')
+            if(resp && resp.status && resp.status.toLowerCase() === 'success' && resp.data && resp.data.length) {
+                resp.data.map(node => {
+                    let authorEl = document.createElement('div')
+                    authorEl.classList.add('book_item')
+                    authorEl.innerText=node.author || ''
+                    let desc_el = document.createElement('div')
+                    desc_el.classList.add('book_item')
+                    desc_el.innerText=node.description || ''
+                    let Btn_el = document.createElement('div')
+                    let book_info_el = document.createElement('div')
+                    if(node.user_bought) {
+                        if(node.is_expired) {
+                            Btn_el.innerText='Subsciption is Expired!!!'
+                            Btn_el.classList.add('expired')
+                        }
+                        else {
+                            book_info_el.innerText='Expires on: ' + node.expiry_date
+                            book_info_el.classList.add('book_info')
+                        }
+                    }
+                    else if(node.stock === 0) {
+                        Btn_el.classList.add('no_stock')
+                        Btn_el.innerText='Out Of Stock'
                     }
                     else {
-                        Btn_el.classList.add('add_btn')
-                        Btn_el.innerText='Add'
-                        Btn_el.style="opacity:.5; pointer-events: none;"
+                        book_info_el.innerText='Stock left: ' + node.stock
+                        book_info_el.classList.add('book_info')
                     }
-                }
-                else if(node.in_stock) {
-                    Btn_el.classList.add('add_btn')
-                    Btn_el.innerText='Add'
-                    Btn_el.addEventListener('click', () => add_book_to_cart(node.book_id, Btn_el))
-                }
-                else {
-                    Btn_el.classList.add('no_stock')
-                    Btn_el.innerText='Out Of Stock'
-                }
-                let MainEl = document.createElement('div')
-                MainEl.classList.add('book_main')
+                    let MainEl = document.createElement('div')
+                    MainEl.classList.add('book_main')
+                    let title_el = document.createElement('div')
+                    title_el.classList.add('book_title')
+                    title_el.innerText = node.name || ''
+                    let ContainerEl = document.createElement('div')
+                    ContainerEl.classList.add('books_cont')
+                    MainEl.append(
+                        authorEl,
+                        desc_el,
+                        Btn_el,
+                        book_info_el
+                    )
+                    ContainerEl.append(MainEl)
+                    ContainerEl.append(title_el)
+                    DOMNode.append(ContainerEl)
+                })
                 let title_el = document.createElement('div')
-                title_el.classList.add('book_title')
-                title_el.innerText = node.name || ''
-                let ContainerEl = document.createElement('div')
-                ContainerEl.classList.add('books_cont')
-                MainEl.append(
-                    authorEl,
-                    desc_el,
-                    Btn_el
-                )
-                ContainerEl.append(MainEl)
-                ContainerEl.append(title_el)
-                DOMNode.append(ContainerEl)
-            })
-            document.getElementById('root').append(DOMNode)
-        }
-    })
-</script>
+                title_el.innerText='Books'
+                title_el.classList.add('title')
+                document.getElementById('mainbar').append(title_el)
+                document.getElementById('mainbar').append(DOMNode)
+            }
+        })
+    </script>
+{% endblock %}
