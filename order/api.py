@@ -78,7 +78,7 @@ def add_order(userObj, bookObj):
 
 @login_required(login_url='/login')
 def get_order_details(req):
-    if(req.method == 'GET'):
+    if(req.method == 'POST'):
         user_info = req.user
         order_info = user_info.order_set.annotate(
             name=F('books__name'),

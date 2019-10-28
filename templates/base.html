@@ -1,3 +1,18 @@
+<script>
+    sessionStorage.setItem('user_id', '{{user_id}}')
+    function getCookie(c_name) {
+        if(document.cookie.length > 0) {
+            c_start = document.cookie.indexOf(c_name + "=");
+            if(c_start != -1) {
+                c_start = c_start + c_name.length + 1;
+                c_end = document.cookie.indexOf(";", c_start);
+                if(c_end == -1) c_end = document.cookie.length;
+                return unescape(document.cookie.substring(c_start,c_end));
+            }
+        }
+        return "";
+    }
+</script>
 <div id="root">
     {% if is_authenticated %}
         <div class='home_wrapper'>
@@ -23,9 +38,12 @@
 <style>
     body {
         background-color: #f9f9f9;
+        font-family: sans-serif;
+        margin: 0px;
     }
     .user {
         color: #fff;
+        text-decoration: underline;
     }
     .home_wrapper {
         display: flex;
@@ -45,7 +63,7 @@
         background-color: #fff;
         padding: 10px;
         border: 1px solid #fff;
-        margin-left: 10px;
+        margin-left: 30px;
         border-radius: 5px;
     }
     .home_link:hover {
@@ -85,6 +103,3 @@
         font-size: 18px;
     }
 </style>
-<script>
-    sessionStorage.setItem('user_id', '{{user_id}}')
-</script>

@@ -39,7 +39,12 @@
     <script>
         const DOMNode = document.createElement('table')
         DOMNode.classList.add('order_wrapper')
-        fetch('/order/get')
+        fetch('/order/get', {
+            method: 'POST',
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken")
+            }
+        })
         .then (data => data.json())
         .then(resp => {
             if(resp && resp.status && resp.status.toLowerCase() === 'success' && resp.data && resp.data.length) {

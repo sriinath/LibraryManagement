@@ -84,18 +84,6 @@
         sessionStorage.setItem('user_id', '{{user_id}}')
         const limit = 15,
             offset=0
-        function getCookie(c_name) {
-            if(document.cookie.length > 0) {
-                c_start = document.cookie.indexOf(c_name + "=");
-                if(c_start != -1) {
-                    c_start = c_start + c_name.length + 1;
-                    c_end = document.cookie.indexOf(";", c_start);
-                    if(c_end == -1) c_end = document.cookie.length;
-                    return unescape(document.cookie.substring(c_start,c_end));
-                }
-            }
-            return "";
-        }
         const add_book_to_cart = (book_id, Btn_el) => {
             let user_id = sessionStorage.getItem('user_id')
             let form = new FormData()
@@ -149,6 +137,7 @@
                         else {
                             book_info_el.innerText='Expires on: ' + node.expiry_date
                             book_info_el.classList.add('book_info')
+                            book_info_el.style="display: block;"
                         }
                     }
                     else if(node.stock === 0) {
