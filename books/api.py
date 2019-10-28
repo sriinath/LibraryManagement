@@ -2,7 +2,9 @@ from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.db.models import Q, Count, When, Case, Value, BooleanField, F, FilteredRelation
 from .models import Books
+from django.contrib.auth.decorators import login_required
 
+@login_required(login_url='/login')
 def get_books(req):
     user_data = req.user
     if(req.method == 'GET'):

@@ -6,7 +6,9 @@ from books.models import Books
 from users.models import Users
 from .models import Order
 from django.db.models import F, When, Case, Value, IntegerField, FilteredRelation, Q, BooleanField
+from django.contrib.auth.decorators import login_required
 
+@login_required(login_url='/login')
 def add_book(req):
     if(req.method == 'POST'):
         postBody = req.POST
@@ -74,6 +76,7 @@ def add_order(userObj, bookObj):
         print(e)
         return False
 
+@login_required(login_url='/login')
 def get_order_details(req):
     if(req.method == 'GET'):
         user_info = req.user

@@ -1,4 +1,7 @@
-{% extends "../base.html" %}
+{% extends "base.html" %}
+{% block sidecontent %}
+    <a class='order_details' href='/order/view'>My Orders ({{ order_count }})</a>
+{% endblock %}
 {% block content %}
     <div id='mainbar'></div>
     <style>
