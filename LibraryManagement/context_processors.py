@@ -13,7 +13,7 @@ def user_data(req):
             'is_authenticated': userData.is_authenticated,
             'user': userData,
             'order_count': order_info.count(),
-            'balance': abs(total_count['count'] * 5) or 0,
+            'balance': total_count and total_count['count'] and abs(total_count['count'] * 5) or 0,
             'user_id': user_id
         }
     else:
