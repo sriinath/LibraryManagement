@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block sidecontent %}
-    <a class='order_details' href='/order/view'>My Orders ({{ order_count }})</a>
+    <a class='order_details' href='/order/view'>My Orders: <span id='my_order'>0</span></a>
+    <div class='balance'>Outstanding Balance is <span id="my_balance">0</span></div>
 {% endblock %}
 {% block content %}
     <div id='mainbar'></div>
@@ -14,7 +15,7 @@
             font-weight: bold;
             font-family: sans-serif;
             font-size: 20px;
-            color: #555;
+            color: #f6f5f1;
         }
         .books_wrapper {
             display: flex;
@@ -24,27 +25,29 @@
             width: 250px;
             margin: 10px;
             height: max-content;
-            border: 1px solid #4fbc9a;
-            transition: box-shadow .3s;
             cursor: default;
-        }
-        .books_cont:hover {
-            box-shadow: 0 0 7px 5px #a3a3a3;
+            background: #f1f1f1;
+            border-radius: 15px;
         }
         .book_main {
             color: #303237;
             box-sizing: border-box;
             padding: 10px;
-            background-color: #fff;
+        }
+        .book_brick {
+            color: #fff;
+            background-color: #50a2ab;
+            box-sizing: border-box;
+            padding: 15px;
+            font-family: sans-serif;
+            border-radius: 15px;
         }
         .book_title {
-            color: #fff;
-            background-color: #4fbc9a;
-            box-sizing: border-box;
-            padding: 20px;
+            padding-bottom: 10px;
+            color: #064559;
             font-family: sans-serif;
-            text-align: center;
-            border-radius: 10px 10px 0px 0px;
+            font-size: 20px;
+            font-weight: bolder;
         }
         .book_item {
             padding-bottom: 5px;
@@ -58,7 +61,6 @@
         }
         .no_stock,
         .expired {
-            color: #d81616;
             font-family: sans-serif;
             font-size: 16px;
             padding: 10px;
@@ -69,15 +71,27 @@
             text-align: left;
         }
         .book_info {
-            display: none;
             font-family: sans-serif;
-            font-size: 16px;
-            padding: 10px 0px;
-            font-weight: bold;
-            color: #000;
+            font-size: 14px;
         }
-        .book_main:hover .book_info {
-            display: block;
+        #my_order,
+        #my_balance {
+            font-weight: bold;
+        }
+        .add_to_cart {
+            width: 100px;
+            margin: 10px auto;
+            background: #3e967d;
+            padding: 10px;
+            text-align: center;
+            border-radius: 5px;
+            color: #ced3d6;
+            cursor: pointer;
+            border: 1px solid;
+        }
+        .add_to_cart:hover {
+            background: #f9f9f9;
+            color: #3e967d;
         }
     </style>
     <script>
@@ -116,19 +130,20 @@
         }
         const DOMNode = document.createElement('div')
         DOMNode.classList.add('books_wrapper')
-        fetch('/books/get?limit=' + limit + '&offset=' + offset)
+        fetch('/books/get?limit=' + limit + '&offset=' + offset + '&user_id={{user_id}}')
         .then (data => data.json())
         .then(resp => {
             if(resp && resp.status && resp.status.toLowerCase() === 'success' && resp.data && resp.data.length) {
                 resp.data.map(node => {
                     let authorEl = document.createElement('div')
                     authorEl.classList.add('book_item')
-                    authorEl.innerText=node.author || ''
+                    authorEl.innerHTML=`by <b>${node.author || ''}</b>`
                     let desc_el = document.createElement('div')
                     desc_el.classList.add('book_item')
                     desc_el.innerText=node.description || ''
                     let Btn_el = document.createElement('div')
                     let book_info_el = document.createElement('div')
+                    let Cart_el = document.createElement('div');
                     if(node.user_bought) {
                         if(node.is_expired) {
                             Btn_el.innerText='Subsciption is Expired!!!'
@@ -140,37 +155,69 @@
                             book_info_el.style="display: block;"
                         }
                     }
-                    else if(node.stock === 0) {
+                    else if(node.stock_left === 0) {
                         Btn_el.classList.add('no_stock')
                         Btn_el.innerText='Out Of Stock'
                     }
                     else {
-                        book_info_el.innerText='Stock left: ' + node.stock
+                        book_info_el.innerHTML=`<b>${node.stock_left}</b> items left`
                         book_info_el.classList.add('book_info')
+                        Cart_el.innerText='Add to Cart'
+                        Cart_el.classList.add('add_to_cart')
+                        Cart_el.addEventListener('click', () => {
+                            add_book_to_cart(node.id, Btn_el)
+                        })
                     }
                     let MainEl = document.createElement('div')
                     MainEl.classList.add('book_main')
                     let title_el = document.createElement('div')
                     title_el.classList.add('book_title')
-                    title_el.innerText = node.name || ''
+                    title_el.innerText = node.title || ''
                     let ContainerEl = document.createElement('div')
                     ContainerEl.classList.add('books_cont')
+                    let BrickEl = document.createElement('div')
+                    BrickEl.classList.add('book_brick')
                     MainEl.append(
+                        title_el,
                         authorEl,
                         desc_el,
+                        Cart_el
+                    )
+                    BrickEl.append(
                         Btn_el,
                         book_info_el
                     )
-                    ContainerEl.append(MainEl)
-                    ContainerEl.append(title_el)
+                    ContainerEl.append(
+                        MainEl,
+                        BrickEl
+                    )
                     DOMNode.append(ContainerEl)
                 })
                 let title_el = document.createElement('div')
-                title_el.innerText='Books'
+                title_el.innerText='Books in Store'
                 title_el.classList.add('title')
+                const MessageEl = document.createElement('div')
+                MessageEl.id = 'message_content';
                 document.getElementById('mainbar').append(title_el)
+                document.getElementById('mainbar').append(MessageEl)
                 document.getElementById('mainbar').append(DOMNode)
             }
         })
+        const getTotalOrder = () => {
+            let user_id = sessionStorage.getItem('user_id')
+            fetch('/order/count?user_id=' + user_id)
+            .then (data => data.json())
+            .then(resp => {
+                const {
+                    status,
+                    count
+                } = resp;
+                if (status && status.toLowerCase() === 'success' && count) {
+                    document.getElementById('my_order').innerText = count
+                }
+            })
+            .catch(err => console.log(err));
+        }
+        getTotalOrder();
     </script>
 {% endblock %}

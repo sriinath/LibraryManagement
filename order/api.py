@@ -17,30 +17,29 @@ def add_book(req):
             book_id = postBody.get('book_id')
             try:
                 bookIns = get_book(item_id=book_id)
-                try:
-                    userIns = get_user(item_id=user_id)
-                    result = add_order(userObj=userIns, bookObj=bookIns)
-                    if(result):
-                        return JsonResponse({
-                            'status': 'success',
-                            'message': 'Success from add_order'
-                        },
-                        status=200
-                        )
-                    else:
-                        return JsonResponse({
-                            'status': 'failure',
-                            'message': 'Failed to add the book to order'
-                        },
-                        status=200
-                        )
-                except Users.DoesNotExist:
+                userIns = get_user(item_id=user_id)
+                result = add_order(userObj=userIns, bookObj=bookIns)
+                if(result):
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': 'Success from add_order'
+                    },
+                    status=200
+                    )
+                else:
                     return JsonResponse({
                         'status': 'failure',
-                        'message': 'User does not exist with' + str(user_id)
+                        'message': 'Failed to add the book to order'
                     },
-                    status=404
+                    status=200
                     )
+            except Users.DoesNotExist:
+                return JsonResponse({
+                    'status': 'failure',
+                    'message': 'User does not exist with' + str(user_id)
+                },
+                status=404
+                )
             except Books.DoesNotExist:      
                 return JsonResponse({
                     'status': 'failure',
@@ -58,13 +57,11 @@ def add_book(req):
     return HttpResponse('Sending HTTP response since it is not post request')
 
 def add_order(userObj, bookObj):
-    st_date = timezone.now()
-    en_date = st_date + timezone.timedelta(days=15)
     try:
-        filter_user_book = Order.objects.filter(books=bookObj, users=userObj)
+        filter_user_book = Order.objects.filter(book=bookObj, ordered_by=userObj)
         if(not filter_user_book.exists()):
             try:
-                order = Order(start_date=st_date, end_date=en_date, books=bookObj, users=userObj)
+                order = Order(book=bookObj, ordered_by=userObj)
                 order.save()
                 return True
             except Exception as e:
@@ -108,3 +105,39 @@ def get_order_details(req):
         status=200
         )
     return HttpResponse('Sending HTTP response since it is not post request')
+
+def get_order_by_user(user_id, values):
+    if user_id is not None and values is not None:
+        order_info = Order.objects.filter(ordered_by=user_id).values(values)        
+        print(order_info)
+        return order_info
+    return dict()
+
+@login_required(login_url='/login')
+def get_total_order_by_user(req):
+    if req.method == 'GET':
+        user_id = req.GET.get('user_id')
+        order_info_count = 0
+        if user_id is not None:
+            order_info_count = get_order_by_user(user_id, ('id')).count()        
+            return JsonResponse({
+                'count': order_info_count,
+                'status': 'success'
+            }, status = 200)
+        else:
+            return JsonResponse({
+                'message': 'User id is mandatory to calculate the total orders',
+                'status': 'success'
+            }, status = 422)
+    return HttpResponse('Sending HTTP response since it is not post request')    
+
+# def get_outstanding_balance_by_user(req):
+#     if req.method == 'GET':
+#         user_id = req.GET.get('user_id')
+
+#         if user_id is not None:
+#             order_info = get_order_by_user(user_id, ('expected_return_date', 'status'))
+
+#             print(order_info)
+#             if order_info:
+#     return HttpResponse('Sending HTTP response since it is not post request')

@@ -1,19 +1,21 @@
 from django.db import models
 from books.models import Books
 from users.models import Users
-from django.utils import timezone
+from datetime import timedelta, datetime
 
 # Create your models here.
 class Order(models.Model):
-    cart_id = models.AutoField(primary_key=True)
-    start_date = models.DateField()
-    end_date = models.DateField()
-    returned_date = models.DateField(null=True, blank=True)
-    books = models.ForeignKey(Books, on_delete=models.CASCADE, null=True)
-    users = models.ForeignKey(Users, on_delete=models.CASCADE, null=True)
+    id = models.AutoField(primary_key=True)
+    ordered_at = models.DateTimeField(auto_now=True)
+    expected_return_date = models.DateTimeField(default=datetime.now() + timedelta(days=15))
+    actual_return_date = models.DateTimeField(null=True, blank=True)
+    status = models.IntegerField(choices=((1, 'pending'), (2, 'approved'), (3, 'declined')), default=1)
+    book = models.ForeignKey(Books, on_delete=models.CASCADE, default=None)
+    ordered_by = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='user', default=None)
+    approved_by = models.ForeignKey(Users, on_delete=models.CASCADE, null=True, blank=True, related_name='admin', default=None)
 
     def __str__(self):
-        return str(self.cart_id)
+        return str(self.id)
 
     def is_expired(self):
-        return self.end_date < timezone.now()
+        return self.expected_return_data < datetime.now()

@@ -9,10 +9,9 @@ choiceGender = (
 )
 
 class Users(AbstractUser):
-    user_id = models.AutoField(primary_key= True)
+    id = models.AutoField(primary_key= True)
     gender = models.TextField(choices=choiceGender)
     phone = models.IntegerField(null=True)
-    books_info = models.ManyToManyField('books.Books', through='order.Order')
 
     def __str__(self):
         return self.username

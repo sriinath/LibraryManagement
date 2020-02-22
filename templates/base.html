@@ -14,22 +14,24 @@
     }
 </script>
 <div id="root">
-    {% if is_authenticated %}
-        <div class='home_wrapper'>
-            <div class='user'>Welcome, {{user}}</div>
-            <a class='home_link' href='\logout'>Logout</a>
-        </div>
-    {% else %}
-        <div class='home_wrapper'>
-            <a class='home_link' href='\login'>Login</a>
-            <a class='home_link' href='\signup'>Sign Up</a>
-        </div>
-    {% endif %}
+    <div class="header_wrapper">
+        <div class="header_title">LIBRARY SYSTEM</div>
+        {% if is_authenticated %}
+            <div class='home_wrapper'>
+                <div class='user'>Welcome, {{user}}</div>
+                <a class='home_link' href='\logout'>Logout</a>
+            </div>
+        {% else %}
+            <div class='home_wrapper'>
+                <a class='home_link' href='\login'>Login</a>
+                <a class='home_link' href='\signup'>Sign Up</a>
+            </div>
+        {% endif %}
+    </div>
     <div id="content" class='main_wrapper'>
         <div class="sidebar">
             {% block sidecontent %}
             {% endblock %}
-            <div class='balance'>Outstanding Balance - <span>{{balance}}</span></div>
         </div>
         {% block content %}
         {% endblock %}
@@ -37,39 +39,48 @@
 </div>
 <style>
     body {
-        background-color: #f9f9f9;
+        background-color: #072138;
         font-family: sans-serif;
+        color: #ced3d6;
         margin: 0px;
     }
     .user {
-        color: #fff;
         text-decoration: underline;
+    }
+    .header_wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        margin: auto;
+        padding: 15px 40px;
+        box-sizing: border-box;
+        border-bottom: 5px solid #57979d;
+        font-weight: bold;
+        font-size: 18px;
+    }
+    .header_title {
+        font-size: 24px;
+        color: #f1f1f1;
     }
     .home_wrapper {
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        width: 100%;
-        margin: auto;
-        /* background-color: #303237; */
-        background-color: #064559;
-        padding: 15px;
-        box-sizing: border-box;
-        border-bottom: 1px solid #f1f1f2;
     }
     .home_link {
         text-decoration: none;
-        color: #064559;
-        background-color: #fff;
+        color: #f1f1f1;
+        background-color: #0079bb;
         padding: 10px;
-        border: 1px solid #fff;
+        border: 1px solid #0079bb;
         margin-left: 30px;
         border-radius: 5px;
     }
     .home_link:hover {
-        color: #fff;
+        color: #0079bb;
         border: 1px solid #f1f1f2;
-        background-color: #064559;
+        background-color: #f1f1f2;
     }
     .main_wrapper {
         display: flex;
@@ -77,26 +88,23 @@
     }
     .sidebar {
         width: 15%;
-        padding: 15px;
-        border-right: 1px solid #a9a9a9;
+        padding: 0px 10px;
+        background: #f1f1f1;
     }
-    .order_details {
-        font-size: 16px;
-        font-family: sans-serif;
-        padding: 10px 0px;
-        width: 100%;
-        display: block;
-        box-sizing: border-box;
-        color: #395697;
-    }
+    .order_details,
     .balance {
         font-size: 16px;
         font-family: sans-serif;
-        padding: 10px 0px;
+        padding: 10px 15px;
         width: 100%;
         display: block;
         box-sizing: border-box;
-        color: #395697;
+        background: #0079bb;
+        color: #f8f8f8;
+        border: 5px solid #0079bb;
+        border-radius: 5px;
+        margin: 10px 0px;
+        text-decoration: none;
     }
     .balance span {
         font-weight: bold;
