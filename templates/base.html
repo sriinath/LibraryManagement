@@ -18,6 +18,7 @@
         <div class="header_title">LIBRARY SYSTEM</div>
         {% if is_authenticated %}
             <div class='home_wrapper'>
+                <div class='balance'>My Balance: <span id="my_balance">0</span></div>        
                 <div class='user'>Welcome, {{user}}</div>
                 <a class='home_link' href='\logout'>Logout</a>
             </div>
@@ -32,6 +33,9 @@
         <div class="sidebar">
             {% block sidecontent %}
             {% endblock %}
+            <a class='order_details' href='/order/view?status=approved'>My Orders (<span id='my_order'>0</span>)</a>
+            <a class='order_details' href='/order/view?status=pending'>Pending Orders (<span id='pend_order'>0</span>)</a>
+            <a class='order_details' href='/order/view?status=declined'>Declined Orders (<span id='dec_order'>0</span>)</a>
         </div>
         {% block content %}
         {% endblock %}
@@ -43,6 +47,10 @@
         font-family: sans-serif;
         color: #ced3d6;
         margin: 0px;
+    }
+    .balance {
+        padding-right: 30px;
+        font-weight: normal;
     }
     .user {
         text-decoration: underline;
@@ -91,8 +99,7 @@
         padding: 0px 10px;
         background: #f1f1f1;
     }
-    .order_details,
-    .balance {
+    .order_details {
         font-size: 16px;
         font-family: sans-serif;
         padding: 10px 15px;
@@ -105,9 +112,36 @@
         border-radius: 5px;
         margin: 10px 0px;
         text-decoration: none;
+        text-align: center;
     }
-    .balance span {
+    .balance span,
+    .order_details span {
         font-weight: bold;
         font-size: 18px;
     }
 </style>
+<script>
+    const getTotalOrder = () => {
+        let user_id = sessionStorage.getItem('user_id')
+        fetch('/order/count?user_id=' + user_id)
+        .then (data => data.json())
+        .then(resp => {
+            const {
+                status,
+                data
+            } = resp;
+            const {
+                pending,
+                approved,
+                declined
+            } = data;
+            if (status && status.toLowerCase() === 'success') {
+                document.getElementById('pend_order').innerText = pending || 0
+                document.getElementById('my_order').innerText = approved || 0
+                document.getElementById('dec_order').innerText = declined || 0
+            }
+        })
+        .catch(err => console.log(err));
+    }
+    getTotalOrder();
+</script>

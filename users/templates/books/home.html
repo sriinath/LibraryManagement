@@ -1,8 +1,4 @@
 {% extends "base.html" %}
-{% block sidecontent %}
-    <a class='order_details' href='/order/view'>My Orders: <span id='my_order'>0</span></a>
-    <div class='balance'>Outstanding Balance is <span id="my_balance">0</span></div>
-{% endblock %}
 {% block content %}
     <div id='mainbar'></div>
     <style>
@@ -79,6 +75,7 @@
             font-weight: bold;
         }
         .add_to_cart {
+            display: none;
             width: 100px;
             margin: 10px auto;
             background: #3e967d;
@@ -92,6 +89,9 @@
         .add_to_cart:hover {
             background: #f9f9f9;
             color: #3e967d;
+        }
+        .books_cont:hover .add_to_cart {
+            display: block;
         }
     </style>
     <script>
@@ -150,7 +150,7 @@
                             Btn_el.classList.add('expired')
                         }
                         else {
-                            book_info_el.innerText='Expires on: ' + node.expiry_date
+                            book_info_el.innerHTML=`Subscribed till: <b>${node.expiry_date ? new Date(node.expiry_date).toLocaleDateString() : ''}</b>`
                             book_info_el.classList.add('book_info')
                             book_info_el.style="display: block;"
                         }
@@ -203,21 +203,5 @@
                 document.getElementById('mainbar').append(DOMNode)
             }
         })
-        const getTotalOrder = () => {
-            let user_id = sessionStorage.getItem('user_id')
-            fetch('/order/count?user_id=' + user_id)
-            .then (data => data.json())
-            .then(resp => {
-                const {
-                    status,
-                    count
-                } = resp;
-                if (status && status.toLowerCase() === 'success' && count) {
-                    document.getElementById('my_order').innerText = count
-                }
-            })
-            .catch(err => console.log(err));
-        }
-        getTotalOrder();
     </script>
 {% endblock %}

@@ -1,46 +1,69 @@
 {% extends "base.html" %}
 {% block sidecontent %}
-    <a class='order_details' href='/'>&lt; Home</a>
+    <a class='order_details' href='/'>Home</a>
 {% endblock %}
 {% block content %}
-    <div id='mainbar'></div>
+    <div id='mainbar'>
+        <div id="order_title" class="title"></div>
+    </div>
     <style>
         #mainbar {
             padding: 15px;
             width: 85%;
         }
         .title {
-            padding: 10px;
+            padding: 10px 10px 30px;
             font-weight: bold;
             font-family: sans-serif;
             font-size: 20px;
-            color: #555;
+            color: #f6f5f1;
+            text-transform: capitalize;
         }
         .order_wrapper {
-            display: table;
-            width: 100%;
+            display: flex;
             font-family: sans-serif;
+            flex-wrap: wrap;
         }
-        .order_wrapper td {
-            text-align: center;
-            background-color: #f1f1f1;
-            color: #395697;
+        .item_wrapper {
             padding: 10px;
+            border: 2px solid;
+            background: #32373b;
+            border-radius: 5px;
+            color: #c8d2d0;
+            flex: 0 calc(50% - 10px);
+            margin: 5px;
+            box-sizing: border-box;
         }
-        .order_wrapper th {
-            text-align: center;
-            background-color: #395697;
-            color: #f1f1f1;
-            font-weight: bold;
-            padding: 10px;
-            font-size: 18px;
+        .item_info {
+            padding: 5px 0px;
+            font-size: 16px;
         }
     </style>
     <script>
-        const DOMNode = document.createElement('table')
-        DOMNode.classList.add('order_wrapper')
-        fetch('/order/get', {
-            method: 'POST',
+        const getStatusId = (status) => {
+            switch(status) {
+                case 'pending': return 1
+                case 'approved': return 2
+                case 'declined': return 3
+                default: return 2
+            }
+        }
+        let currLocation = location.search ? location.search.split('?')[1] : ''
+        let statusId = 2
+        if(currLocation) {
+            const currLocationArr = currLocation.split('&')
+            currLocationArr.map(path => {
+                if(path) {
+                    const [key, value] = path.split('=')
+                    if(key && key === 'status' && value) {
+                        document.getElementById('order_title').innerText=`${value} Orders`
+                        statusId = getStatusId(value)
+                    }
+                }
+            })
+        }
+        fetch(`/order/get?user_id={{user_id}}&status=${statusId}`, {
+            method: 'GET',
             headers: {
                 "X-CSRFToken": getCookie("csrftoken")
             }
@@ -48,56 +71,101 @@
         .then (data => data.json())
         .then(resp => {
             if(resp && resp.status && resp.status.toLowerCase() === 'success' && resp.data && resp.data.length) {
-                let row_el = document.createElement('tr')
-                let book_name = document.createElement('th')
-                book_name.innerText = 'Name'
-                let author_name = document.createElement('th')
-                author_name.innerText = 'Author'
-                let start_date = document.createElement('th')
-                start_date.innerText = 'Start Date'
-                let end_date = document.createElement('th')
-                end_date.innerText = 'End Date'
-                let expired = document.createElement('th')
-                expired.innerText = 'Is Expired?'
-                let outstanding_days = document.createElement('th')
-                outstanding_days.innerText = 'Outstandng Days'
-                row_el.append(
-                    book_name,
-                    author_name,
-                    start_date,
-                    end_date,
-                    expired,
-                    outstanding_days
-                )
-                DOMNode.append(row_el)
-                resp.data.map(node => {
-                    row_el = document.createElement('tr')
-                    book_name = document.createElement('td')
-                    book_name.innerText = node.name || ''
-                    author_name = document.createElement('td')
-                    author_name.innerText = node.author || ''
-                    start_date = document.createElement('td')
-                    start_date.innerText = node.start_date || ''
-                    end_date = document.createElement('td')
-                    end_date.innerText = node.end_date || ''
-                    expired = document.createElement('td')
-                    expired.innerText = node.is_expired ? 'Yes' : 'No'
-                    outstanding_days = document.createElement('td')
-                    outstanding_days.innerText = node.is_expired && node.outstanding_days ? Math.abs(node.outstanding_days) : '-'
-                    row_el.append(
-                        book_name,
-                        author_name,
-                        start_date,
-                        end_date,
-                        expired,
-                        outstanding_days
+                const DOMNode = document.createElement('div')
+                DOMNode.classList.add('order_wrapper')
+                resp.data.map(order => {
+                    const {
+                        price,
+                        is_expired,
+                        name,
+                        author,
+                        ordered_at,
+                        status,
+                        expected_return_date,
+                        approved_by
+                    } = order
+                    const item_wrapper = document.createElement('div')
+                    item_wrapper.classList.add('item_wrapper')
+                    const titleEl = document.createElement('div')
+                    titleEl.classList.add('item_info')
+                    titleEl.innerHTML = `<b>${name}</b>`
+                    const authorEl = document.createElement('div')
+                    authorEl.classList.add('item_info')
+                    authorEl.innerHTML = `by <b>${author}</b>`
+                    // const priceEl = document.createElement('div')
+                    // priceEl.classList.add('item_info')
+                    // priceEl.innerText = price
+                    const ordered_on = document.createElement('div')
+                    ordered_on.classList.add('item_info')
+                    ordered_on.innerText = `Ordered on: ${new Date(ordered_at).toLocaleDateString()}`
+                    item_wrapper.append(
+                        titleEl,
+                        authorEl,
+                        // priceEl,
+                        ordered_on
                     )
-                    DOMNode.append(row_el)
+                    if(status && status === 2) {
+                        let return_date = ''
+                        if(expected_return_date) {
+                            return_date = new Date(expected_return_date).toLocaleDateString()
+                            const expired = document.createElement('div')
+                            expired.classList.add('item_info')
+                            if(is_expired) {
+                                expired.innerText = `Expired at ${return_date}`
+                            } else {
+                                expired.innerText = `Will expire on ${return_date}`
+                            }
+                            item_wrapper.append(expired)
+                        }
+                    }
+                    DOMNode.append(item_wrapper)
                 })
-                let title_el = document.createElement('div')
-                title_el.innerText='Orders'
-                title_el.classList.add('title')
-                document.getElementById('mainbar').append(title_el)
+                // let row_el = document.createElement('tr')
+                // let book_name = document.createElement('th')
+                // book_name.innerText = 'Name'
+                // let author_name = document.createElement('th')
+                // author_name.innerText = 'Author'
+                // let start_date = document.createElement('th')
+                // start_date.innerText = 'Start Date'
+                // let end_date = document.createElement('th')
+                // end_date.innerText = 'End Date'
+                // let expired = document.createElement('th')
+                // expired.innerText = 'Is Expired?'
+                // let outstanding_days = document.createElement('th')
+                // outstanding_days.innerText = 'Outstandng Days'
+                // row_el.append(
+                //     book_name,
+                //     author_name,
+                //     start_date,
+                //     end_date,
+                //     expired,
+                //     outstanding_days
+                // )
+                // DOMNode.append(row_el)
+                // resp.data.map(node => {
+                //     row_el = document.createElement('tr')
+                //     book_name = document.createElement('td')
+                //     book_name.innerText = node.name || ''
+                //     author_name = document.createElement('td')
+                //     author_name.innerText = node.author || ''
+                //     start_date = document.createElement('td')
+                //     start_date.innerText = node.start_date || ''
+                //     end_date = document.createElement('td')
+                //     end_date.innerText = node.end_date || ''
+                //     expired = document.createElement('td')
+                //     expired.innerText = node.is_expired ? 'Yes' : 'No'
+                //     outstanding_days = document.createElement('td')
+                //     outstanding_days.innerText = node.is_expired && node.outstanding_days ? Math.abs(node.outstanding_days) : '-'
+                //     row_el.append(
+                //         book_name,
+                //         author_name,
+                //         start_date,
+                //         end_date,
+                //         expired,
+                //         outstanding_days
+                //     )
+                //     DOMNode.append(row_el)
+                // })
                 document.getElementById('mainbar').append(DOMNode)
             }
         })

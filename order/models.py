@@ -7,7 +7,7 @@ from datetime import timedelta, datetime
 class Order(models.Model):
     id = models.AutoField(primary_key=True)
     ordered_at = models.DateTimeField(auto_now=True)
-    expected_return_date = models.DateTimeField(default=datetime.now() + timedelta(days=15))
+    expected_return_date = models.DateTimeField(null=True, blank=True)
     actual_return_date = models.DateTimeField(null=True, blank=True)
     status = models.IntegerField(choices=((1, 'pending'), (2, 'approved'), (3, 'declined')), default=1)
     book = models.ForeignKey(Books, on_delete=models.CASCADE, default=None)
@@ -18,4 +18,4 @@ class Order(models.Model):
         return str(self.id)
 
     def is_expired(self):
-        return self.expected_return_data < datetime.now()
+        return self.expected_return_date < datetime.now()
