@@ -1,12 +1,13 @@
 from django.http import HttpResponse, JsonResponse
-from django.utils import timezone
+from datetime import datetime
 from users.models import get_item as get_user
 from books.models import get_item as get_book
 from books.models import Books
 from users.models import Users
 from .models import Order
-from django.db.models import F, When, Case, Value, IntegerField, FilteredRelation, Q, BooleanField, Count
+from django.db.models import F, When, Case, Value, IntegerField, FilteredRelation, Q, BooleanField, Count, Sum
 from django.contrib.auth.decorators import login_required
+import json
 
 @login_required(login_url='/login')
 def add_book(req):
@@ -18,7 +19,7 @@ def add_book(req):
             try:
                 bookIns = get_book(item_id=book_id)
                 userIns = get_user(item_id=user_id)
-                result = add_order(userObj=userIns, bookObj=bookIns)
+                result = add_order(userObj=user_id, bookObj=book_id)
                 if(result):
                     return JsonResponse({
                         'status': 'failure',
@@ -29,7 +30,7 @@ def add_book(req):
                 else:
                     return JsonResponse({
                         'status': 'success',
-                        'message': 'Success from add_order'
+                        'message': 'Successfully added book to the order'
                     },
                     status=200
                     )
@@ -58,7 +59,7 @@ def add_book(req):
 
 def add_order(userObj, bookObj):
     try:
-        filter_user_book = Order.objects.filter(book=bookObj, ordered_by=userObj)
+        filter_user_book = Order.objects.filter(Q(status='approved') | Q(status='pending'), book=bookObj, ordered_by=userObj)
         if(not filter_user_book.exists()):
             try:
                 order = Order(book=bookObj, ordered_by=userObj)
@@ -78,7 +79,7 @@ def get_order_details(req):
     if(req.method == 'GET'):
         get_params = req.GET
         user_id = int(get_params.get('user_id'))
-        status = int(get_params.get('status'))
+        status = get_params.get('status')
         if user_id is not None and status is not None:
             user_order = get_order_info('id', 'ordered_at', 'expected_return_date', 'ordered_by', 'status', ordered_by=user_id, status=status)
             order_info = user_order.annotate(
@@ -86,7 +87,7 @@ def get_order_details(req):
                 author=F('book__author'),
                 price=F('book__price'),
                 is_expired=Case(
-                    When(expected_return_date__lt=timezone.now(), then=Value(True)),
+                    When(expected_return_date__lt=datetime.now(), then=Value(True)),
                     default=False,
                     output_field=BooleanField()
                 )
@@ -99,7 +100,7 @@ def get_order_details(req):
                 'author',
                 'is_expired',
                 'status',
-                'approved_by'
+                'admin_action_by'
             )
             return JsonResponse({
                 'data': list(order_info),
@@ -119,11 +120,11 @@ def get_order_info(*args, **kwargs):
     order_info = Order.objects.filter(**kwargs).values(*args)
     return order_info
 
-def get_order_by_user(user_id, *args):
+def get_order_by_user(user_id, *args, **kwargs):
     if user_id is not None:
-        order_info = get_order_info(*args, ordered_by=user_id)
+        order_info = get_order_info(*args, ordered_by=user_id, **kwargs)
         return order_info
-    return dict()
+    raise Exception('User id is mandatory and cannot be empty')
 
 @login_required(login_url='/login')
 def get_total_order_by_user(req):
@@ -132,9 +133,9 @@ def get_total_order_by_user(req):
         if user_id is not None:
             order_info = get_order_info(('id'), ordered_by=user_id)
             order_info_count=order_info.annotate(
-                approved = Count('id', filter=Q(status=2)),
-                pending = Count('id', filter=Q(status=1)),
-                declined = Count('id', filter=Q(status=3))
+                approved = Count('id', filter=Q(status='approved')),
+                pending = Count('id', filter=Q(status='pending')),
+                declined = Count('id', filter=Q(status='declined'))
             ).values(
                 'approved',
                 'pending',
@@ -151,13 +152,40 @@ def get_total_order_by_user(req):
             }, status = 422)
     return HttpResponse('Sending HTTP response since it is not post request')    
 
-# def get_outstanding_balance_by_user(req):
-#     if req.method == 'GET':
-#         user_id = req.GET.get('user_id')
+def get_outstanding_balance_by_user(req):
+    if req.method == 'GET':
+        user_id = req.GET.get('user_id')
+        outstanding_days = 0
+        try:
+            order_info = get_order_by_user(user_id, ordered_at__day__lt=datetime.now().day)
+            order_result = order_info.annotate(
+                outstanding_days = Sum(datetime.now() - F('ordered_at'))
+            ).values(
+                'outstanding_days'
+            )
+            if order_result and order_result[0] and order_result[0]['outstanding_days'] and order_result[0]['outstanding_days'].day:
+                outstanding_days = order_result[0]['outstanding_days'].day
+            return JsonResponse({
+                'balance': outstanding_days,
+                'status': 'success'
+            }, status = 200)
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                'message': 'Something went wrong while getting outstanding balance for account',
+                'status': 'failure'
+            }, status = 412)
 
-#         if user_id is not None:
-#             order_info = get_order_by_user(user_id, ('expected_return_date', 'status'))
+    return HttpResponse('Sending HTTP response since it is not post request')
 
-#             print(order_info)
-#             if order_info:
-#     return HttpResponse('Sending HTTP response since it is not post request')
+# Need to be completed
+def remove_order(req):
+    if req.method == 'DELETE':
+        reqBody = json.loads(req.body)
+        user_id = reqBody.get('user_id')
+        order_id = reqBody.get('order_id')
+        return JsonResponse({
+            'status': 'success'
+        }, status = 200)
+
+    return HttpResponse('Sending HTTP response since it is not post request')

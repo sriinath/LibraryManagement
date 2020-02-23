@@ -18,7 +18,7 @@
         <div class="header_title">LIBRARY SYSTEM</div>
         {% if is_authenticated %}
             <div class='home_wrapper'>
-                <div class='balance'>My Balance: <span id="my_balance">0</span></div>        
+                <div class='balance'>Outstanding Days: <span id="my_balance">0</span></div>        
                 <div class='user'>Welcome, {{user}}</div>
                 <a class='home_link' href='\logout'>Logout</a>
             </div>
@@ -121,8 +121,23 @@
     }
 </style>
 <script>
+    let user_id = sessionStorage.getItem('user_id')
+    const getOutstandingBalance = () => {
+        fetch('/order/balance?user_id=' + user_id)
+        .then (data => data.json())
+        .then(resp => {
+            const {
+                status,
+                balance
+            } = resp;
+            if (status && status.toLowerCase() === 'success') {
+                document.getElementById('my_balance').innerText = balance || 0
+            }
+        })
+        .catch(err => console.log(err));
+    }
+
     const getTotalOrder = () => {
-        let user_id = sessionStorage.getItem('user_id')
         fetch('/order/count?user_id=' + user_id)
         .then (data => data.json())
         .then(resp => {
@@ -143,5 +158,6 @@
         })
         .catch(err => console.log(err));
     }
+    getOutstandingBalance();
     getTotalOrder();
 </script>

@@ -26,4 +26,4 @@ This Application is designed to manage the books and its buyers from online at l
     - REDIS
 
 #SCHEMA:
- ```https://dbdiagram.io/d/5e37f5939e76504e0ef0f49a```
+ ```https://dbdiagram.io/d/5e4f848a07a7395d994deeef```

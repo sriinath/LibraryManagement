@@ -78,17 +78,17 @@
             display: none;
             width: 100px;
             margin: 10px auto;
-            background: #3e967d;
+            background: #9ab352;
             padding: 10px;
             text-align: center;
             border-radius: 5px;
-            color: #ced3d6;
+            color: #fff;
             cursor: pointer;
             border: 1px solid;
         }
         .add_to_cart:hover {
             background: #f9f9f9;
-            color: #3e967d;
+            color: #9ab352;
         }
         .books_cont:hover .add_to_cart {
             display: block;
@@ -115,6 +115,7 @@
             .then(data => data.json())
             .then(resp => {
                 if(resp && resp.status && resp.status.toLowerCase() === 'success') {
+                    getTotalOrder && getTotalOrder()
                     msgEl.innerText = 'Successfully added the book to order'
                     Btn_el.style="opacity:.5; pointer-events: none;"
                     setTimeout(() => {

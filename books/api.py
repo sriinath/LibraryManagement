@@ -22,7 +22,7 @@ def get_books(req):
                 expiry_date=F('order_list__expected_return_date'),
                 stock_left=Case(
                     When(
-                        Q(order_list__status=2), then=F('stock') - F('user_count')
+                        Q(order_list__status='approved'), then=F('stock') - F('user_count')
                     ),
                     default=F('stock'),
                     output_field=IntegerField()
@@ -30,7 +30,7 @@ def get_books(req):
             ).annotate(
                 user_bought=Case(
                     When(
-                        Q(order_list__status=2) & Q(order_list__ordered_by=user_id), then=Value(True)
+                        Q(order_list__status='approved') & Q(order_list__ordered_by=user_id), then=Value(True)
                     ),
                     default=Value(False),
                     output_field=BooleanField()
