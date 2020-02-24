@@ -189,9 +189,9 @@ def get_outstanding_balance_by_user(req):
         user_id = req.GET.get('user_id')
         outstanding_days = 0
         try:
-            order_info = get_order_by_user(user_id, ordered_at__day__lt=datetime.now().day)
+            order_info = get_order_by_user(user_id, expected_return_date__day__lt=datetime.now().day)
             order_result = order_info.annotate(
-                outstanding_days = Sum(datetime.now() - F('ordered_at'))
+                outstanding_days = Sum(datetime.now() - F('expected_return_date'))
             ).values(
                 'outstanding_days'
             )
@@ -210,11 +210,9 @@ def get_outstanding_balance_by_user(req):
                 )
         except Order.DoesNotExist:      
             return JsonResponse({
-                'status': 'failure',
-                'message': 'Order does not exist'
-            },
-            status=404
-            )
+                'balance': outstanding_days,
+                'status': 'success'
+            }, status = 200)
         except Exception as e:
             print(e)
             return JsonResponse({

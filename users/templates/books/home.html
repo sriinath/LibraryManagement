@@ -59,7 +59,6 @@
         .expired {
             font-family: sans-serif;
             font-size: 16px;
-            padding: 10px;
             text-align: center;
             font-weight: bold;
         }
@@ -156,12 +155,12 @@
                             book_info_el.style="display: block;"
                         }
                     }
-                    else if(node.stock_left === 0) {
+                    else if(!node.stock_left) {
                         Btn_el.classList.add('no_stock')
                         Btn_el.innerText='Out Of Stock'
                     }
                     else {
-                        book_info_el.innerHTML=`<b>${node.stock_left}</b> items left`
+                        book_info_el.innerHTML=`<b>${node.stock_left || 'No'}</b> items left`
                         book_info_el.classList.add('book_info')
                         Cart_el.innerText='Add to Cart'
                         Cart_el.classList.add('add_to_cart')
