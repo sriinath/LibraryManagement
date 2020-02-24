@@ -136,20 +136,26 @@
                         const removeOrdeEl = document.createElement('div')
                         removeOrdeEl.innerText = 'Delete'
                         removeOrdeEl.classList.add('remove_order')
-                        removeOrdeEl.addEventListener('click', () => deleteOrder(id))
+                        removeOrdeEl.addEventListener('click', () => updateOrder(id, 'delete'))
                         item_wrapper.append(removeOrdeEl)
                     }
                     DOMNode.append(item_wrapper)
                 })
+                const MessageEl = document.createElement('div')
+                MessageEl.id = 'message_content';
+                document.getElementById('mainbar').append(MessageEl)
                 document.getElementById('mainbar').append(DOMNode)
             }
         })
-        const deleteOrder = (orderId) => {
-            fetch('/order/delete', {
-                method: 'DELETE',
+        const updateOrder = (orderId, action) => {
+            let msgEl = document.getElementById('message_content')
+            msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+            fetch('/order/update', {
+                method: 'PUT',
                 body: JSON.stringify({
                     user_id: '{{user_id}}',
-                    order_id: orderId
+                    order_id: orderId,
+                    action
                 }),
                 headers: {
                     "X-CSRFToken": getCookie("csrftoken")
@@ -157,7 +163,13 @@
             })
             .then(data => data.json())
             .then(resp => {
-                console.log(resp)
+                if(resp && resp.status && resp.status === 'success') {
+                    msgEl.innerText = resp.message || 'Successfully updated the order'
+                    getTotalOrder && getTotalOrder()
+                }
+                setTimeout(() => {
+                    msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+                }, 5000)
             })
             .catch(err => console.log(err))
         }

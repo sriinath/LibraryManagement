@@ -14,6 +14,7 @@ def get_books(req):
             offset = int(params.get('offset', 0))
             start_idx = offset * limit
             end_idx = start_idx + limit
+            # Duplicates records on multiple orders of the book need to be handled
             books_data = Books.objects.all()[start_idx : end_idx]
             books_data = books_data.annotate(
                 order_list=FilteredRelation('order',condition=Q(order__book=F('id')))
