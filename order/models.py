@@ -20,5 +20,9 @@ class Order(models.Model):
     def __str__(self):
         return str(self.id)
 
+    @property
     def is_expired(self):
-        return self.expected_return_date < datetime.now()
+        if self.expected_return_date is not None:
+            return self.expected_return_date < datetime.now()
+        else:
+            return False

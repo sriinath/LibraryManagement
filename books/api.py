@@ -14,47 +14,30 @@ def get_books(req):
             offset = int(params.get('offset', 0))
             start_idx = offset * limit
             end_idx = start_idx + limit
-            # Duplicates records on multiple orders of the book need to be handled
-            books_data = Books.objects.all()[start_idx : end_idx]
-            books_data = books_data.annotate(
-                order_list=FilteredRelation('order',condition=Q(order__book=F('id')))
-            ).annotate(
-                user_count=Count('order_list__ordered_by'),
-                expiry_date=F('order_list__expected_return_date'),
-                stock_left=Case(
-                    When(
-                        Q(order_list__status='approved'), then=F('stock') - F('user_count')
-                    ),
-                    default=F('stock'),
-                    output_field=IntegerField()
-                )
-            ).annotate(
-                user_bought=Case(
-                    When(
-                        Q(order_list__status='approved') & Q(order_list__ordered_by=user_id), then=Value(True)
-                    ),
-                    default=Value(False),
-                    output_field=BooleanField()
-                ),
-                is_expired=Case(
-                    When(
-                        expiry_date__lt=timezone.now(), then=Value(True)
-                    ),
-                    default=Value(False),
-                    output_field=BooleanField()
-                )
-            ).values(
+            books_data = Books.objects.all()
+            total_count = books_data.count()
+            filtered_books_data = books_data[start_idx : end_idx]
+            books_data = list(filtered_books_data.values(
                 'id',
                 'title',
                 'description',
-                'author',
-                'user_bought',
-                'expiry_date',
-                'stock_left',
-                'is_expired'
-            )
+                'author'
+            ))
+
+            for index, books in enumerate(filtered_books_data):
+                orders = books.valid_orders
+                temp_curr_book =  books_data[index]
+                temp_curr_book['stock_left'] = books.available_stock
+                if orders is not None:
+                    user_order=orders.filter(ordered_by=user_id).all()
+                    if user_order and user_order.exists():
+                        temp_curr_book['is_expired'] = user_order[0].is_expired
+                        temp_curr_book['expiry_date'] = user_order[0].expected_return_date
+                books_data[index]=temp_curr_book
+
             return JsonResponse({
-                'data': list(books_data),
+                'data': books_data,
+                'count': total_count,
                 'status': 'success'
             },
             status=200,

@@ -92,6 +92,9 @@
         .books_cont:hover .add_to_cart {
             display: block;
         }
+        #message_content {
+            text-align: center;
+        }
     </style>
     <script>
         sessionStorage.setItem('user_id', '{{user_id}}')
@@ -113,18 +116,20 @@
             })
             .then(data => data.json())
             .then(resp => {
+                msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
                 if(resp && resp.status && resp.status.toLowerCase() === 'success') {
                     getTotalOrder && getTotalOrder()
+                    msgEl.style.color = 'green'
                     msgEl.innerText = 'Successfully added the book to order'
                     Btn_el.style="opacity:.5; pointer-events: none;"
-                    setTimeout(() => {
-                        msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
-                    }, 5000)
                 }
                 else if(resp && resp.message && resp.message.trim().length) {
+                    msgEl.style.color = 'red'
                     msgEl.innerText = resp.message
                 }
-                msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
+                setTimeout(() => {
+                    msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+                }, 5000)
             })
             .catch(err => console.log(err))
         }

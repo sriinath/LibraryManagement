@@ -60,6 +60,14 @@
             color: #f86161;
             background: #fff;
         }
+        .no_order_info {
+            color: maroon;
+            font-style: italic;
+            background: #f1f1f1;
+            padding: 10px;
+            width: 100%;
+            text-align: center;
+        }
     </style>
     <script>
         let currLocation = location.search ? location.search.split('?')[1] : ''
@@ -76,80 +84,89 @@
                 }
             })
         }
-        fetch(`/order/get?user_id={{user_id}}&status=${statusId}`, {
-            method: 'GET',
-            headers: {
-                "X-CSRFToken": getCookie("csrftoken")
-            }
-        })
-        .then (data => data.json())
-        .then(resp => {
-            if(resp && resp.status && resp.status.toLowerCase() === 'success' && resp.data && resp.data.length) {
-                const DOMNode = document.createElement('div')
-                DOMNode.classList.add('order_wrapper')
-                resp.data.map(order => {
-                    const {
-                        id,
-                        price,
-                        is_expired,
-                        name,
-                        author,
-                        ordered_at,
-                        status,
-                        expected_return_date,
-                        admin_action_by
-                    } = order
-                    const item_wrapper = document.createElement('div')
-                    item_wrapper.classList.add('item_wrapper')
-                    const titleEl = document.createElement('div')
-                    titleEl.classList.add('item_info', 'title')
-                    titleEl.innerHTML = `<b>${name}</b>`
-                    const authorEl = document.createElement('div')
-                    authorEl.classList.add('item_info')
-                    authorEl.innerHTML = `by <b>${author}</b>`
-                    const ordered_on = document.createElement('div')
-                    ordered_on.classList.add('item_info')
-                    ordered_on.innerText = `Ordered on: ${new Date(ordered_at).toLocaleDateString()}`
-                    const info_wrapper = document.createElement('div')
-                    info_wrapper.append(
-                        titleEl,
-                        authorEl,
-                        // priceEl,
-                        ordered_on
-                    )
-                    if(status && status === 'approved') {
-                        let return_date = ''
-                        if(expected_return_date) {
-                            return_date = new Date(expected_return_date).toLocaleDateString()
-                            const expired = document.createElement('div')
-                            expired.classList.add('item_info')
-                            if(is_expired) {
-                                expired.innerText = `Expired at ${return_date}`
-                            } else {
-                                expired.innerText = `Will expire on ${return_date}`
+        const getOrders = () => {
+            const MessageEl = document.createElement('div')
+            MessageEl.id = 'message_content';
+            const DOMNode = document.createElement('div')
+            DOMNode.classList.add('order_wrapper')
+            document.getElementsByClassName('order_wrapper').innerHTML = ''
+            fetch(`/order/get?user_id={{user_id}}&status=${statusId}`, {
+                method: 'GET',
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            })
+            .then (data => data.json())
+            .then(resp => {
+                if(resp && resp.status && resp.status.toLowerCase() === 'success' && resp.data && resp.data.length) {
+                    resp.data.map(order => {
+                        const {
+                            id,
+                            price,
+                            is_expired,
+                            name,
+                            author,
+                            ordered_at,
+                            status,
+                            expected_return_date,
+                            admin_action_by
+                        } = order
+                        const item_wrapper = document.createElement('div')
+                        item_wrapper.classList.add('item_wrapper')
+                        const titleEl = document.createElement('div')
+                        titleEl.classList.add('item_info', 'title')
+                        titleEl.innerHTML = `<b>${name}</b>`
+                        const authorEl = document.createElement('div')
+                        authorEl.classList.add('item_info')
+                        authorEl.innerHTML = `by <b>${author}</b>`
+                        const ordered_on = document.createElement('div')
+                        ordered_on.classList.add('item_info')
+                        ordered_on.innerText = `Ordered on: ${new Date(ordered_at).toLocaleDateString()}`
+                        const info_wrapper = document.createElement('div')
+                        info_wrapper.append(
+                            titleEl,
+                            authorEl,
+                            // priceEl,
+                            ordered_on
+                        )
+                        if(status && status === 'approved') {
+                            let return_date = ''
+                            if(expected_return_date) {
+                                return_date = new Date(expected_return_date).toLocaleDateString()
+                                const expired = document.createElement('div')
+                                expired.classList.add('item_info')
+                                if(is_expired) {
+                                    expired.innerText = `Expired at ${return_date}`
+                                } else {
+                                    expired.innerText = `Will expire on ${return_date}`
+                                }
+                                info_wrapper.append(expired)
                             }
-                            info_wrapper.append(expired)
                         }
-                    }
-                    item_wrapper.append(info_wrapper)
-                    if(status === 'pending') {
-                        const removeOrdeEl = document.createElement('div')
-                        removeOrdeEl.innerText = 'Delete'
-                        removeOrdeEl.classList.add('remove_order')
-                        removeOrdeEl.addEventListener('click', () => updateOrder(id, 'delete'))
-                        item_wrapper.append(removeOrdeEl)
-                    }
-                    DOMNode.append(item_wrapper)
-                })
-                const MessageEl = document.createElement('div')
-                MessageEl.id = 'message_content';
+                        item_wrapper.append(info_wrapper)
+                        if(status === 'pending') {
+                            const removeOrdeEl = document.createElement('div')
+                            removeOrdeEl.innerText = 'Delete'
+                            removeOrdeEl.classList.add('remove_order')
+                            removeOrdeEl.addEventListener('click', () => updateOrder(id, 'delete'))
+                            item_wrapper.append(removeOrdeEl)
+                        }
+                        DOMNode.append(item_wrapper)
+                    })
+                }
+                else {
+                    const noOrderEl = document.createElement('div')
+                    noOrderEl.classList.add('no_order_info')
+                    noOrderEl.innerText = `Nothing here :-/ Order something and come back`
+                    DOMNode.append(noOrderEl)
+                }
                 document.getElementById('mainbar').append(MessageEl)
                 document.getElementById('mainbar').append(DOMNode)
-            }
-        })
+            })
+        }
         const updateOrder = (orderId, action) => {
             let msgEl = document.getElementById('message_content')
-            msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+            msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto; text_align:center"
             fetch('/order/update', {
                 method: 'PUT',
                 body: JSON.stringify({
@@ -163,9 +180,14 @@
             })
             .then(data => data.json())
             .then(resp => {
+                msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
                 if(resp && resp.status && resp.status === 'success') {
+                    msgEl.style.color = 'red'
                     msgEl.innerText = resp.message || 'Successfully updated the order'
                     getTotalOrder && getTotalOrder()
+                    setTimeout(() => {
+                        getOrders && getOrders()
+                    }, 5000)
                 }
                 setTimeout(() => {
                     msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
@@ -173,5 +195,6 @@
             })
             .catch(err => console.log(err))
         }
+        getOrders()
     </script>
 {% endblock %}
