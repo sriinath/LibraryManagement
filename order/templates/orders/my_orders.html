@@ -1,105 +1,200 @@
 {% extends "base.html" %}
 {% block sidecontent %}
-    <a class='order_details' href='/'>&lt; Home</a>
+    <a class='order_details' href='/'>Home</a>
 {% endblock %}
 {% block content %}
-    <div id='mainbar'></div>
+    <div id='mainbar'>
+        <div id="order_title" class="title"></div>
+    </div>
     <style>
         #mainbar {
             padding: 15px;
             width: 85%;
         }
         .title {
-            padding: 10px;
+            padding: 10px 10px 30px;
             font-weight: bold;
             font-family: sans-serif;
             font-size: 20px;
-            color: #555;
+            color: #f6f5f1;
+            text-transform: capitalize;
         }
         .order_wrapper {
-            display: table;
-            width: 100%;
+            display: flex;
             font-family: sans-serif;
+            flex-wrap: wrap;
         }
-        .order_wrapper td {
-            text-align: center;
-            background-color: #f1f1f1;
-            color: #395697;
+        .item_wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding: 10px;
+            border: 2px solid;
+            background: #32373b;
+            border-radius: 5px;
+            color: #c8d2d0;
+            flex: 0 calc(50% - 10px);
+            margin: 5px;
+            box-sizing: border-box;
+            cursor: default;
         }
-        .order_wrapper th {
-            text-align: center;
-            background-color: #395697;
-            color: #f1f1f1;
-            font-weight: bold;
+        .item_info {
+            padding: 5px 0px;
+            font-size: 16px;
+        }
+        .item_info.title {
+            font-size: 21px;
+        }
+        .remove_order {
+            width: 100px;
+            background: #f86161;
             padding: 10px;
-            font-size: 18px;
+            text-align: center;
+            border-radius: 5px;
+            color: #f7ebea;
+            cursor: pointer;
+            border: 1px solid;
+            height: 15px;       
+        }
+        .remove_order:hover {
+            color: #f86161;
+            background: #fff;
+        }
+        .no_order_info {
+            color: maroon;
+            font-style: italic;
+            background: #f1f1f1;
+            padding: 10px;
+            width: 100%;
+            text-align: center;
         }
     </style>
     <script>
-        const DOMNode = document.createElement('table')
-        DOMNode.classList.add('order_wrapper')
-        fetch('/order/get', {
-            method: 'POST',
-            headers: {
-                "X-CSRFToken": getCookie("csrftoken")
-            }
-        })
-        .then (data => data.json())
-        .then(resp => {
-            if(resp && resp.status && resp.status.toLowerCase() === 'success' && resp.data && resp.data.length) {
-                let row_el = document.createElement('tr')
-                let book_name = document.createElement('th')
-                book_name.innerText = 'Name'
-                let author_name = document.createElement('th')
-                author_name.innerText = 'Author'
-                let start_date = document.createElement('th')
-                start_date.innerText = 'Start Date'
-                let end_date = document.createElement('th')
-                end_date.innerText = 'End Date'
-                let expired = document.createElement('th')
-                expired.innerText = 'Is Expired?'
-                let outstanding_days = document.createElement('th')
-                outstanding_days.innerText = 'Outstandng Days'
-                row_el.append(
-                    book_name,
-                    author_name,
-                    start_date,
-                    end_date,
-                    expired,
-                    outstanding_days
-                )
-                DOMNode.append(row_el)
-                resp.data.map(node => {
-                    row_el = document.createElement('tr')
-                    book_name = document.createElement('td')
-                    book_name.innerText = node.name || ''
-                    author_name = document.createElement('td')
-                    author_name.innerText = node.author || ''
-                    start_date = document.createElement('td')
-                    start_date.innerText = node.start_date || ''
-                    end_date = document.createElement('td')
-                    end_date.innerText = node.end_date || ''
-                    expired = document.createElement('td')
-                    expired.innerText = node.is_expired ? 'Yes' : 'No'
-                    outstanding_days = document.createElement('td')
-                    outstanding_days.innerText = node.is_expired && node.outstanding_days ? Math.abs(node.outstanding_days) : '-'
-                    row_el.append(
-                        book_name,
-                        author_name,
-                        start_date,
-                        end_date,
-                        expired,
-                        outstanding_days
-                    )
-                    DOMNode.append(row_el)
-                })
-                let title_el = document.createElement('div')
-                title_el.innerText='Orders'
-                title_el.classList.add('title')
-                document.getElementById('mainbar').append(title_el)
+        let currLocation = location.search ? location.search.split('?')[1] : ''
+        let statusId = 'approved'
+        if(currLocation) {
+            const currLocationArr = currLocation.split('&')
+            currLocationArr.map(path => {
+                if(path) {
+                    const [key, value] = path.split('=')
+                    if(key && key === 'status' && value) {
+                        document.getElementById('order_title').innerText=`${value} Orders`
+                        statusId = value
+                    }
+                }
+            })
+        }
+        const getOrders = () => {
+            const MessageEl = document.createElement('div')
+            MessageEl.id = 'message_content';
+            const DOMNode = document.createElement('div')
+            DOMNode.classList.add('order_wrapper')
+            document.getElementsByClassName('order_wrapper').innerHTML = ''
+            fetch(`/order/get?user_id={{user_id}}&status=${statusId}`, {
+                method: 'GET',
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            })
+            .then (data => data.json())
+            .then(resp => {
+                if(resp && resp.status && resp.status.toLowerCase() === 'success' && resp.data && resp.data.length) {
+                    resp.data.map(order => {
+                        const {
+                            id,
+                            price,
+                            is_expired,
+                            name,
+                            author,
+                            ordered_at,
+                            status,
+                            expected_return_date,
+                            admin_action_by
+                        } = order
+                        const item_wrapper = document.createElement('div')
+                        item_wrapper.classList.add('item_wrapper')
+                        const titleEl = document.createElement('div')
+                        titleEl.classList.add('item_info', 'title')
+                        titleEl.innerHTML = `<b>${name}</b>`
+                        const authorEl = document.createElement('div')
+                        authorEl.classList.add('item_info')
+                        authorEl.innerHTML = `by <b>${author}</b>`
+                        const ordered_on = document.createElement('div')
+                        ordered_on.classList.add('item_info')
+                        ordered_on.innerText = `Ordered on: ${new Date(ordered_at).toLocaleDateString()}`
+                        const info_wrapper = document.createElement('div')
+                        info_wrapper.append(
+                            titleEl,
+                            authorEl,
+                            // priceEl,
+                            ordered_on
+                        )
+                        if(status && status === 'approved') {
+                            let return_date = ''
+                            if(expected_return_date) {
+                                return_date = new Date(expected_return_date).toLocaleDateString()
+                                const expired = document.createElement('div')
+                                expired.classList.add('item_info')
+                                if(is_expired) {
+                                    expired.innerText = `Expired at ${return_date}`
+                                } else {
+                                    expired.innerText = `Will expire on ${return_date}`
+                                }
+                                info_wrapper.append(expired)
+                            }
+                        }
+                        item_wrapper.append(info_wrapper)
+                        if(status === 'pending') {
+                            const removeOrdeEl = document.createElement('div')
+                            removeOrdeEl.innerText = 'Delete'
+                            removeOrdeEl.classList.add('remove_order')
+                            removeOrdeEl.addEventListener('click', () => updateOrder(id, 'delete'))
+                            item_wrapper.append(removeOrdeEl)
+                        }
+                        DOMNode.append(item_wrapper)
+                    })
+                }
+                else {
+                    const noOrderEl = document.createElement('div')
+                    noOrderEl.classList.add('no_order_info')
+                    noOrderEl.innerText = `Nothing here :-/ Order something and come back`
+                    DOMNode.append(noOrderEl)
+                }
+                document.getElementById('mainbar').append(MessageEl)
                 document.getElementById('mainbar').append(DOMNode)
-            }
-        })
+            })
+        }
+        const updateOrder = (orderId, action) => {
+            let msgEl = document.getElementById('message_content')
+            msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto; text_align:center"
+            fetch('/order/update', {
+                method: 'PUT',
+                body: JSON.stringify({
+                    user_id: '{{user_id}}',
+                    order_id: orderId,
+                    action
+                }),
+                headers: {
+                    "X-CSRFToken": getCookie("csrftoken")
+                }
+            })
+            .then(data => data.json())
+            .then(resp => {
+                msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
+                if(resp && resp.status && resp.status === 'success') {
+                    msgEl.style.color = 'red'
+                    msgEl.innerText = resp.message || 'Successfully updated the order'
+                    getTotalOrder && getTotalOrder()
+                    setTimeout(() => {
+                        getOrders && getOrders()
+                    }, 5000)
+                }
+                setTimeout(() => {
+                    msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+                }, 5000)
+            })
+            .catch(err => console.log(err))
+        }
+        getOrders()
     </script>
 {% endblock %}

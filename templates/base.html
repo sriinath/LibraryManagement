@@ -14,22 +14,28 @@
     }
 </script>
 <div id="root">
-    {% if is_authenticated %}
-        <div class='home_wrapper'>
-            <div class='user'>Welcome, {{user}}</div>
-            <a class='home_link' href='\logout'>Logout</a>
-        </div>
-    {% else %}
-        <div class='home_wrapper'>
-            <a class='home_link' href='\login'>Login</a>
-            <a class='home_link' href='\signup'>Sign Up</a>
-        </div>
-    {% endif %}
+    <div class="header_wrapper">
+        <div class="header_title">LIBRARY SYSTEM</div>
+        {% if is_authenticated %}
+            <div class='home_wrapper'>
+                <div class='balance'>Outstanding Days: <span id="my_balance">0</span></div>        
+                <div class='user'>Welcome, {{user}}</div>
+                <a class='home_link' href='\logout'>Logout</a>
+            </div>
+        {% else %}
+            <div class='home_wrapper'>
+                <a class='home_link' href='\login'>Login</a>
+                <a class='home_link' href='\signup'>Sign Up</a>
+            </div>
+        {% endif %}
+    </div>
     <div id="content" class='main_wrapper'>
         <div class="sidebar">
             {% block sidecontent %}
             {% endblock %}
-            <div class='balance'>Outstanding Balance - <span>{{balance}}</span></div>
+            <a class='order_details' href='/order/view?status=approved'>My Orders (<span id='my_order'>0</span>)</a>
+            <a class='order_details' href='/order/view?status=pending'>Pending Orders (<span id='pend_order'>0</span>)</a>
+            <a class='order_details' href='/order/view?status=declined'>Declined Orders (<span id='dec_order'>0</span>)</a>
         </div>
         {% block content %}
         {% endblock %}
@@ -37,39 +43,52 @@
 </div>
 <style>
     body {
-        background-color: #f9f9f9;
+        background-color: #072138;
         font-family: sans-serif;
+        color: #ced3d6;
         margin: 0px;
     }
+    .balance {
+        padding-right: 30px;
+        font-weight: normal;
+    }
     .user {
-        color: #fff;
         text-decoration: underline;
+    }
+    .header_wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        margin: auto;
+        padding: 15px 40px;
+        box-sizing: border-box;
+        border-bottom: 5px solid #57979d;
+        font-weight: bold;
+        font-size: 18px;
+    }
+    .header_title {
+        font-size: 24px;
+        color: #f1f1f1;
     }
     .home_wrapper {
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        width: 100%;
-        margin: auto;
-        /* background-color: #303237; */
-        background-color: #064559;
-        padding: 15px;
-        box-sizing: border-box;
-        border-bottom: 1px solid #f1f1f2;
     }
     .home_link {
         text-decoration: none;
-        color: #064559;
-        background-color: #fff;
+        color: #f1f1f1;
+        background-color: #0079bb;
         padding: 10px;
-        border: 1px solid #fff;
+        border: 1px solid #0079bb;
         margin-left: 30px;
         border-radius: 5px;
     }
     .home_link:hover {
-        color: #fff;
+        color: #0079bb;
         border: 1px solid #f1f1f2;
-        background-color: #064559;
+        background-color: #f1f1f2;
     }
     .main_wrapper {
         display: flex;
@@ -77,29 +96,68 @@
     }
     .sidebar {
         width: 15%;
-        padding: 15px;
-        border-right: 1px solid #a9a9a9;
+        padding: 0px 10px;
+        background: #f1f1f1;
     }
     .order_details {
         font-size: 16px;
         font-family: sans-serif;
-        padding: 10px 0px;
+        padding: 10px 15px;
         width: 100%;
         display: block;
         box-sizing: border-box;
-        color: #395697;
+        background: #0079bb;
+        color: #f8f8f8;
+        border: 5px solid #0079bb;
+        border-radius: 5px;
+        margin: 10px 0px;
+        text-decoration: none;
+        text-align: center;
     }
-    .balance {
-        font-size: 16px;
-        font-family: sans-serif;
-        padding: 10px 0px;
-        width: 100%;
-        display: block;
-        box-sizing: border-box;
-        color: #395697;
-    }
-    .balance span {
+    .balance span,
+    .order_details span {
         font-weight: bold;
         font-size: 18px;
     }
 </style>
+<script>
+    let user_id = sessionStorage.getItem('user_id')
+    const getOutstandingBalance = () => {
+        fetch('/order/balance?user_id=' + user_id)
+        .then (data => data.json())
+        .then(resp => {
+            const {
+                status,
+                balance
+            } = resp;
+            if (status && status.toLowerCase() === 'success') {
+                document.getElementById('my_balance').innerText = balance || 0
+            }
+        })
+        .catch(err => console.log(err));
+    }
+
+    const getTotalOrder = () => {
+        fetch('/order/count?user_id=' + user_id)
+        .then (data => data.json())
+        .then(resp => {
+            const {
+                status,
+                data
+            } = resp;
+            const {
+                pending,
+                approved,
+                declined
+            } = data;
+            if (status && status.toLowerCase() === 'success') {
+                document.getElementById('pend_order').innerText = pending || 0
+                document.getElementById('my_order').innerText = approved || 0
+                document.getElementById('dec_order').innerText = declined || 0
+            }
+        })
+        .catch(err => console.log(err));
+    }
+    getOutstandingBalance();
+    getTotalOrder();
+</script>
