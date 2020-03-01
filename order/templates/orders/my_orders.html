@@ -88,8 +88,8 @@
             const MessageEl = document.createElement('div')
             MessageEl.id = 'message_content';
             const DOMNode = document.createElement('div')
+            DOMNode.id = 'order_wrapper'
             DOMNode.classList.add('order_wrapper')
-            document.getElementsByClassName('order_wrapper').innerHTML = ''
             fetch(`/order/get?user_id={{user_id}}&status=${statusId}`, {
                 method: 'GET',
                 headers: {
@@ -155,6 +155,7 @@
                     })
                 }
                 else {
+                    document.getElementById('order_wrapper').innerHTML = ''
                     const noOrderEl = document.createElement('div')
                     noOrderEl.classList.add('no_order_info')
                     noOrderEl.innerText = `Nothing here :-/ Order something and come back`
@@ -193,7 +194,15 @@
                     msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
                 }, 5000)
             })
-            .catch(err => console.log(err))
+            .catch(err => {
+                console.log(err)
+                msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
+                msgEl.style.color = 'red'
+                msgEl.innerText = 'Sorry, Something went wrong.'
+                setTimeout(() => {
+                    msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+                }, 5000)
+            })
         }
         getOrders()
     </script>

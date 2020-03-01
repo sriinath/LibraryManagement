@@ -131,7 +131,15 @@
                     msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
                 }, 5000)
             })
-            .catch(err => console.log(err))
+            .catch(err => {
+                console.log(err)
+                msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
+                msgEl.style.color = 'red'
+                msgEl.innerText = 'Sorry, Something went wrong.'
+                setTimeout(() => {
+                    msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+                }, 5000)
+            })
         }
         const DOMNode = document.createElement('div')
         DOMNode.classList.add('books_wrapper')

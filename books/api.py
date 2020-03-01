@@ -2,9 +2,9 @@ from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
 from django.db.models import Q, Count, When, Case, Value, BooleanField, F, FilteredRelation, IntegerField
 from .models import Books
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import permission_required
 
-@login_required(login_url='/login')
+@permission_required('books.view_books', raise_exception=True)
 def get_books(req):
     if(req.method == 'GET'):
         params = req.GET

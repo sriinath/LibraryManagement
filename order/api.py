@@ -6,10 +6,10 @@ from books.models import Books
 from users.models import Users
 from .models import Order
 from django.db.models import F, When, Case, Value, IntegerField, FilteredRelation, Q, BooleanField, Count, Sum
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import permission_required
 import json
 
-@login_required(login_url='/login')
+@permission_required('order.add_order', raise_exception=True)
 def add_book(req):
     if(req.method == 'POST'):
         postBody = req.POST
@@ -74,7 +74,7 @@ def add_order(userObj, bookObj):
         print(e)
         return e
 
-@login_required(login_url='/login')
+@permission_required('order.view_order', raise_exception=True)
 def get_order_details(req):
     if(req.method == 'GET'):
         get_params = req.GET
@@ -145,8 +145,7 @@ def get_order_by_id(order_id):
         return Order.objects.get(id=order_id)
     raise Exception('Order id is manatory')
 
-
-@login_required(login_url='/login')
+@permission_required('order.view_order', raise_exception=True)
 def get_total_order_by_user(req):
     if req.method == 'GET':
         user_id = req.GET.get('user_id')
@@ -184,6 +183,7 @@ def get_total_order_by_user(req):
             }, status = 422)
     return HttpResponse('Sending HTTP response since it is not post request')    
 
+@permission_required('order.view_order', raise_exception=True)
 def get_outstanding_balance_by_user(req):
     if req.method == 'GET':
         user_id = req.GET.get('user_id')
@@ -222,6 +222,7 @@ def get_outstanding_balance_by_user(req):
 
     return HttpResponse('Sending HTTP response since it is not post request')
 
+@permission_required('order.change_order', raise_exception=True)
 def manage_order(req):
     if req.method == 'PUT':
         reqBody = json.loads(req.body)

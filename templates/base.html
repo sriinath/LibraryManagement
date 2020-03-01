@@ -30,15 +30,17 @@
         {% endif %}
     </div>
     <div id="content" class='main_wrapper'>
-        <div class="sidebar">
-            {% block sidecontent %}
+        {% if is_authenticated %}
+            <div class="sidebar">
+                {% block sidecontent %}
+                {% endblock %}
+                <a class='order_details' href='/order/view?status=approved'>My Orders (<span id='my_order'>0</span>)</a>
+                <a class='order_details' href='/order/view?status=pending'>Pending Orders (<span id='pend_order'>0</span>)</a>
+                <a class='order_details' href='/order/view?status=declined'>Declined Orders (<span id='dec_order'>0</span>)</a>
+            </div>
+            {% block content %}
             {% endblock %}
-            <a class='order_details' href='/order/view?status=approved'>My Orders (<span id='my_order'>0</span>)</a>
-            <a class='order_details' href='/order/view?status=pending'>Pending Orders (<span id='pend_order'>0</span>)</a>
-            <a class='order_details' href='/order/view?status=declined'>Declined Orders (<span id='dec_order'>0</span>)</a>
-        </div>
-        {% block content %}
-        {% endblock %}
+        {% endif %}    
     </div>
 </div>
 <style>
@@ -134,7 +136,15 @@
                 document.getElementById('my_balance').innerText = balance || 0
             }
         })
-        .catch(err => console.log(err));
+        .catch(err => {
+            console.log(err)
+            msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
+            msgEl.style.color = 'red'
+            msgEl.innerText = 'Sorry, Something went wrong.'
+            setTimeout(() => {
+                msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+            }, 5000)
+        });
     }
 
     const getTotalOrder = () => {
@@ -156,7 +166,15 @@
                 document.getElementById('dec_order').innerText = declined || 0
             }
         })
-        .catch(err => console.log(err));
+        .catch(err => {
+            console.log(err)
+            msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
+            msgEl.style.color = 'red'
+            msgEl.innerText = 'Sorry, Something went wrong.'
+            setTimeout(() => {
+                msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+            }, 5000)
+        });
     }
     getOutstandingBalance();
     getTotalOrder();
