@@ -1,8 +1,9 @@
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponseNotAllowed, JsonResponse
 from django.utils import timezone
 from django.db.models import Q, Count, When, Case, Value, BooleanField, F, FilteredRelation, IntegerField
-from .models import Books
+from .models import Books, get_item
 from django.contrib.auth.decorators import permission_required
+from django.db.utils import IntegrityError
 
 @permission_required('books.view_books', raise_exception=True)
 def get_books(req):
@@ -49,4 +50,70 @@ def get_books(req):
                 'status': 'success'
             }, status = 422)
 
-    return HttpResponse('Sending HTTP response since it is not post request')
+    return HttpResponseNotAllowed()
+
+@permission_required('books.add_books', raise_exception=True)
+def create_books(req):
+    if(req.method == 'POST'):
+        params = req.POST
+        title = params.get('title')
+        desc = params.get('description')
+        author = params.get('author')
+        stock = params.get('stock')
+        price = params.get('price')
+        try:
+            book = Books(
+                title=title,
+                description=desc,
+                author=author,
+                stock=stock,
+                price=price
+            )
+            book.save()
+            return JsonResponse({
+                'message': 'Successfully added the book to list',
+                'status': 'success'
+            }, status = 201)
+        except IntegrityError:
+            return JsonResponse({
+                'message': 'Please make sure you passed all the required fields',
+                'status': 'failure'
+            }, status = 412)
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                'message': 'Something went wrong while processing your reqeuest',
+                'status': 'failure'
+            }, status = 500)
+    return HttpResponseNotAllowed()
+
+@permission_required('books.change_books', raise_exception=True)
+def update_books(req):
+    if(req.method == 'PUT'):
+        reqBody = json.loads(req.body)
+        book_id = reqBody.get('id')
+        stock = reqBody.get('stock')
+        price = reqBody.get('price')
+        try:
+            book = get_item(item_id=book_id)
+            if book is not None:
+                book.stock = stock
+                book.price = price
+                book.save()
+            else:
+                return JsonResponse({
+                    'message': 'There is no book with the id provided',
+                    'status': 'failure'
+                }, status = 422)
+        except IntegrityError:
+            return JsonResponse({
+                'message': 'Please make sure you passed all the required fields',
+                'status': 'failure'
+            }, status = 412)
+        except Exception as e:
+            print(e)
+            return JsonResponse({
+                'message': 'Something went wrong while processing your reqeuest',
+                'status': 'failure'
+            }, status = 422)
+    return HttpResponseNotAllowed()

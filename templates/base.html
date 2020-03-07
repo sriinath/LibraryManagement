@@ -34,9 +34,13 @@
             <div class="sidebar">
                 {% block sidecontent %}
                 {% endblock %}
+                {% if is_admin %}
+                    <a class='order_details' href='/order/view'>Orders</a>
+                {% else %}
                 <a class='order_details' href='/order/view?status=approved'>My Orders (<span id='my_order'>0</span>)</a>
                 <a class='order_details' href='/order/view?status=pending'>Pending Orders (<span id='pend_order'>0</span>)</a>
                 <a class='order_details' href='/order/view?status=declined'>Declined Orders (<span id='dec_order'>0</span>)</a>
+                {% endif %}
             </div>
             {% block content %}
             {% endblock %}
@@ -122,60 +126,63 @@
         font-size: 18px;
     }
 </style>
-<script>
-    let user_id = sessionStorage.getItem('user_id')
-    const getOutstandingBalance = () => {
-        fetch('/order/balance?user_id=' + user_id)
-        .then (data => data.json())
-        .then(resp => {
-            const {
-                status,
-                balance
-            } = resp;
-            if (status && status.toLowerCase() === 'success') {
-                document.getElementById('my_balance').innerText = balance || 0
-            }
-        })
-        .catch(err => {
-            console.log(err)
-            msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
-            msgEl.style.color = 'red'
-            msgEl.innerText = 'Sorry, Something went wrong.'
-            setTimeout(() => {
-                msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
-            }, 5000)
-        });
-    }
-
-    const getTotalOrder = () => {
-        fetch('/order/count?user_id=' + user_id)
-        .then (data => data.json())
-        .then(resp => {
-            const {
-                status,
-                data
-            } = resp;
-            const {
-                pending,
-                approved,
-                declined
-            } = data;
-            if (status && status.toLowerCase() === 'success') {
-                document.getElementById('pend_order').innerText = pending || 0
-                document.getElementById('my_order').innerText = approved || 0
-                document.getElementById('dec_order').innerText = declined || 0
-            }
-        })
-        .catch(err => {
-            console.log(err)
-            msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
-            msgEl.style.color = 'red'
-            msgEl.innerText = 'Sorry, Something went wrong.'
-            setTimeout(() => {
-                msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
-            }, 5000)
-        });
-    }
-    getOutstandingBalance();
-    getTotalOrder();
-</script>
+{% if is_admin %}
+{% else %}
+    <script>
+        let user_id = sessionStorage.getItem('user_id')
+        const getOutstandingBalance = () => {
+            fetch('/order/balance?user_id=' + user_id)
+            .then (data => data.json())
+            .then(resp => {
+                const {
+                    status,
+                    balance
+                } = resp;
+                if (status && status.toLowerCase() === 'success') {
+                    document.getElementById('my_balance').innerText = balance || 0
+                }
+            })
+            .catch(err => {
+                console.log(err)
+                msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
+                msgEl.style.color = 'red'
+                msgEl.innerText = 'Sorry, Something went wrong.'
+                setTimeout(() => {
+                    msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+                }, 5000)
+            });
+        }
+    
+        const getTotalOrder = () => {
+            fetch('/order/count?user_id=' + user_id)
+            .then (data => data.json())
+            .then(resp => {
+                const {
+                    status,
+                    data
+                } = resp;
+                const {
+                    pending,
+                    approved,
+                    declined
+                } = data;
+                if (status && status.toLowerCase() === 'success') {
+                    document.getElementById('pend_order').innerText = pending || 0
+                    document.getElementById('my_order').innerText = approved || 0
+                    document.getElementById('dec_order').innerText = declined || 0
+                }
+            })
+            .catch(err => {
+                console.log(err)
+                msgEl.style="transform: translate(0px, 0px); opacity:1; margin: 15px auto;"
+                msgEl.style.color = 'red'
+                msgEl.innerText = 'Sorry, Something went wrong.'
+                setTimeout(() => {
+                    msgEl.style="transform: translate(0px, -100px); opacity: 0; margin: auto;"
+                }, 5000)
+            });
+        }
+        getOutstandingBalance();
+        getTotalOrder();
+    </script>
+{% endif %}

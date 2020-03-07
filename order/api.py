@@ -1,4 +1,4 @@
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse, HttpResponseNotAllowed
 from datetime import datetime
 from users.models import get_item as get_user
 from books.models import get_item as get_book
@@ -55,7 +55,7 @@ def add_book(req):
             },
             status=422
             )
-    return HttpResponse('Sending HTTP response since it is not post request')
+    return HttpResponseNotAllowed()
 
 def add_order(userObj, bookObj):
     try:
@@ -122,7 +122,7 @@ def get_order_details(req):
                 'status': 'success'
             }, status = 422)
 
-    return HttpResponse('Sending HTTP response since it is not post request')
+    return HttpResponseNotAllowed()
 
 def get_order_info(*args, **kwargs):
     order_info = Order.objects.filter(**kwargs).values(*args)
@@ -181,7 +181,7 @@ def get_total_order_by_user(req):
                 'message': 'User id is mandatory to calculate the total orders',
                 'status': 'success'
             }, status = 422)
-    return HttpResponse('Sending HTTP response since it is not post request')    
+    return HttpResponseNotAllowed()    
 
 @permission_required('order.view_order', raise_exception=True)
 def get_outstanding_balance_by_user(req):
@@ -220,7 +220,13 @@ def get_outstanding_balance_by_user(req):
                 'status': 'failure'
             }, status = 422)
 
-    return HttpResponse('Sending HTTP response since it is not post request')
+    return HttpResponseNotAllowed()
+
+def is_group_valid(user_obj, group_name):
+    if user_obj and group_name and isinstance(user_obj, Users):
+        return user_obj.groups.filter(name=group_name).exists()
+    else:
+        return False
 
 @permission_required('order.change_order', raise_exception=True)
 def manage_order(req):
@@ -232,34 +238,66 @@ def manage_order(req):
         if user_id is not None and order_id is not None:
             user_id = int(user_id)
             order_id = int(order_id)
-            # Need to add role based functionalities
             try:
                 user_order = get_order_by_id(order_id)
+                req_user_id = req.user.id
                 if action is not None:
                     if action == 'delete':
-                        # Check if the request from user and vaildate updating his own orders
-                        req_user_id = req.user.id
-                        if req_user_id is not None and user_id == req_user_id and user_order.ordered_by_id == req_user_id:
-                            # User based order update flow
-                            user_order.status = 'done'
-                            user_order.is_cancelled = True
-                            user_order.actual_return_date = datetime.now()
-                            user_order.save()
-                            return JsonResponse({
-                                'message': 'Successfully removed the order from the list',
-                                'status': 'success'
-                            }, status = 200)
+                        if is_group_valid(req.user, 'Library_User'):
+                            if req_user_id is not None and user_id == req_user_id and user_order.ordered_by_id == req_user_id:
+                                # User based order update flow
+                                user_order.status = 'done'
+                                user_order.is_cancelled = True
+                                user_order.actual_return_date = datetime.now()
+                                user_order.save()
+                                return JsonResponse({
+                                    'message': 'Successfully removed the order from the list',
+                                    'status': 'success'
+                                }, status = 200)
+                            else:
+                                return JsonResponse({
+                                    'message': 'User cannot update someone elses order',
+                                    'status': 'failure'
+                                }, status = 403)
                         else:
                             return JsonResponse({
-                                'message': 'User cannot update someone elses order',
+                                'message': 'Library User is allowed to delete his own order',
                                 'status': 'failure'
-                            }, status = 403)
+                            }, status = 401)
                     elif action == 'approve':
-                        pass
+                        if is_group_valid(req.user, 'Library_Admin'):
+                            user_order.status = 'approved'
+                            user_order.admin_action_by = req_user_id
+                            user_order.admin_action_at = datetime.now()
+                            user_order.expected_return_date = datetime.now + datetime.timedelta(days=15)
+                            user_order.save()
+                        else:
+                            return JsonResponse({
+                                'message': 'Library Admin is allowed to approve any orders',
+                                'status': 'failure'
+                            }, status = 401)
                     elif action == 'decline':
-                        pass
+                        if is_group_valid(req.user, 'Library_Admin'):
+                            user_order.status = 'declined'
+                            user_order.admin_action_by = req_user_id
+                            user_order.admin_action_at = datetime.now()
+                            user_order.save()
+                        else:
+                            return JsonResponse({
+                                'message': 'Library Admin is allowed to decline any orders',
+                                'status': 'failure'
+                            }, status = 401)
                     elif action == 'accepted':
-                        pass
+                        if is_group_valid(req.user, 'Library_Admin'):
+                            user_order.status = 'done'
+                            user_order.return_approved_by = req_user_id
+                            user_order.actual_return_date = datetime.now()
+                            user_order.save()
+                        else:
+                            return JsonResponse({
+                                'message': 'Library Admin is allowed to approve any orders',
+                                'status': 'failure'
+                            }, status = 401)
                     else:
                         return JsonResponse({
                             'message': 'Action provided is invalid',
@@ -289,4 +327,65 @@ def manage_order(req):
                 'message': 'User id and order id is mandatory to update order',
                 'status': 'failure'
             }, status = 422)
-    return HttpResponse('Sending HTTP response since it is not post request')    
+    return HttpResponseNotAllowed()
+
+@permission_required('order.view_order', raise_exception=True)
+def get_all_order(req):
+    if req.method == 'GET':
+        if is_group_valid(req.user, 'Library_Admin'):
+            params = req.GET
+            user = params.get('user')
+            book = params.get('book')
+            status = params.get('status')
+            expired_only = params.get('expired-only', False)
+            limit = int(params.get('limit', 20))
+            offset = int(params.get('offset', 0))
+            start_idx = offset * limit
+            end_idx = start_idx + limit
+            total_order = Order.objects.all()
+            if user:
+                total_order = Order.objects.filter(
+                    ordered_by=user
+                )
+            if book:
+                total_order = Order.objects.filter(
+                    book=book
+                )
+            if status:
+                total_order = Order.objects.filter(
+                    status=status
+                )
+            if status is not None and status == 'approved' and expired_only:
+                total_order.filter(expected_return_date__gt=datetime.now())
+            total_order = total_order[start_idx:end_idx]
+            total_order = total_order.annotate(
+                name=F('book__title'),
+                author=F('book__author'),
+                price=F('book__price'),
+                is_expired=Case(
+                    When(expected_return_date__lt=datetime.now(), then=Value(True)),
+                    default=False,
+                    output_field=BooleanField()
+                )
+            ).values(
+                'id',
+                'ordered_at',
+                'price',
+                'expected_return_date',
+                'name',
+                'author',
+                'is_expired',
+                'status',
+                'admin_action_by'
+            )
+            return JsonResponse({
+                'data': list(total_order),
+                'status': 'success'
+            },
+            status=200)
+        else:
+            return JsonResponse({
+                'message': 'Library Admin is allowed to view all the orders',
+                'status': 'failure'
+            }, status = 401)
+    return HttpResponseNotAllowed()
