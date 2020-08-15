@@ -10,7 +10,7 @@ from django.db.utils import IntegrityError
 from django.views.decorators.http import require_http_methods
 
 from CustomException import CustomException, exception_handler
-from utils.S3_utils import upload_s3
+from utils.S3_utils import upload_s3, get_object
 from utils.utils import is_valid_protocol, create_write_path
 from .models import Books, get_item
 from .helper import add_product_to_queue
@@ -178,23 +178,22 @@ def process_product_data(request):
         print('subscription url is :', subscriber_url)
         return HttpResponse(status=200)
     elif message_type == 'Notification':
-        product_data_url = payload.get('product_data_url')
+        s3_body = payload.get('Message', '')
+        if s3_body:
+            parsed_message = json.loads(s3_body)
+            records = parsed_message.get('Records', [])
+            for data in records:
+                s3_key = data.get('s3', {}).get('object', {}).get('key', '').replace('+', ' ')
+                if s3_key:
+                    s3_object = get_object(BUCKET_NAME, s3_key)
+                    temp_file_path = create_write_path('process_batches', datetime.now())
 
-        if not product_data_url:
-            raise CustomException(412, 'product_data_url is necessary to process this request')
-        
-        if not is_valid_protocol(product_data_url):
-            raise CustomException(422, 'product_data_url must be a valid http protocol')
+                    with open(temp_file_path, 'wb+') as destination_file:
+                        for chunk in s3_object.iter_chunks():
+                            destination_file.write(chunk)
 
-        temp_file_path = create_write_path('process_batches', datetime.now())
-
-        product_data = requests.get(product_data_url)
-        with open(temp_file_path, 'wb+') as destination_file:
-            for chunk in product_data.chunks():
-                destination_file.write(chunk)
-
-        add_product_to_queue(temp_file_path)
-        os.remove(temp_file_path)
+                    add_product_to_queue(temp_file_path)
+                    os.remove(temp_file_path)
 
         return JsonResponse({
             'status': 'success'
