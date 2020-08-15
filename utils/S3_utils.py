@@ -38,7 +38,7 @@ def get_object(bucket_name, key, **kwargs):
         )
         status = resp.get('ResponseMetadata', {}).get('HTTPStatusCode', None)
         if status == 200:
-            return resp.get('Body')
+            return resp.get('Body', None)
         return None
     except Exception as retreive_err:
         print('Error while retreiving object from s3', retreive_err)
