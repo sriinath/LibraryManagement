@@ -170,12 +170,14 @@ def upload_product_data(request):
 @exception_handler
 def process_product_data(request):
     message_type = request.headers.get('x-amz-sns-message-type')
+    payload = json.loads(request.body)
+    print(payload)
 
     if message_type in ('SubscriptionConfirmation', 'UnsubscribeConfirmation'):
+        subscriber_url = payload.get('SubscribeURL')
+        print('subscription url is :', subscriber_url)
         return HttpResponse(status=200)
     elif message_type == 'Notification':
-        payload = json.loads(request.body)
-        print(payload)
         product_data_url = payload.get('product_data_url')
 
         if not product_data_url:
