@@ -2,7 +2,7 @@ import os
 import json
 import requests
 from datetime import datetime
-from django.http import HttpResponseNotAllowed, JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.db.models import Q, Count, When, Case, Value, BooleanField, F, FilteredRelation, IntegerField
 from django.contrib.auth.decorators import permission_required
@@ -169,25 +169,33 @@ def upload_product_data(request):
 @require_http_methods(["POST"])
 @exception_handler
 def process_product_data(request):
-    payload = json.loads(request.body)
-    product_data_url = payload.get('product_data_url')
+    message_type = request.headers.get('x-amz-sns-message-type')
 
-    if not product_data_url:
-        raise CustomException(412, 'product_data_url is necessary to process this request')
-    
-    if not is_valid_protocol(product_data_url):
-        raise CustomException(422, 'product_data_url must be a valid http protocol')
+    if message_type in ('SubscriptionConfirmation', 'UnsubscribeConfirmation'):
+        return HttpResponse(status=200)
+    elif message_type == 'Notification':
+        payload = json.loads(request.body)
+        print(payload)
+        product_data_url = payload.get('product_data_url')
 
-    temp_file_path = create_write_path('process_batches', datetime.now())
+        if not product_data_url:
+            raise CustomException(412, 'product_data_url is necessary to process this request')
+        
+        if not is_valid_protocol(product_data_url):
+            raise CustomException(422, 'product_data_url must be a valid http protocol')
 
-    product_data = requests.get(product_data_url)
-    with open(temp_file_path, 'wb+') as destination_file:
-        for chunk in product_data.chunks():
-            destination_file.write(chunk)
+        temp_file_path = create_write_path('process_batches', datetime.now())
 
-    add_product_to_queue(temp_file_path)
-    os.remove(temp_file_path)
+        product_data = requests.get(product_data_url)
+        with open(temp_file_path, 'wb+') as destination_file:
+            for chunk in product_data.chunks():
+                destination_file.write(chunk)
 
-    return JsonResponse({
-        'status': 'success'
-    })
+        add_product_to_queue(temp_file_path)
+        os.remove(temp_file_path)
+
+        return JsonResponse({
+            'status': 'success'
+        })
+    else:
+        return CustomException(400, 'Unknown message type')
