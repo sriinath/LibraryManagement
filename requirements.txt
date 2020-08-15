@@ -1,3 +1,7 @@
 Django~=2.2.4
 psycopg2==2.7.5
 psycopg2-binary==2.7.5
+boto3==1.14.33
+pandas == 1.0.3
+requests == 2.23.0
+redis == 3.4.1

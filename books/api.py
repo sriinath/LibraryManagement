@@ -1,10 +1,23 @@
+import os
+import json
+import requests
+from datetime import datetime
 from django.http import HttpResponseNotAllowed, JsonResponse
 from django.utils import timezone
 from django.db.models import Q, Count, When, Case, Value, BooleanField, F, FilteredRelation, IntegerField
-from .models import Books, get_item
 from django.contrib.auth.decorators import permission_required
 from django.db.utils import IntegrityError
+from django.views.decorators.http import require_http_methods
 
+from CustomException import CustomException, exception_handler
+from utils.S3_utils import upload_s3
+from utils.utils import is_valid_protocol, create_write_path
+from .models import Books, get_item
+from .helper import add_product_to_queue
+from constants import BUCKET_NAME
+
+
+@require_http_methods(["POST"])
 @permission_required('books.view_books', raise_exception=True)
 def get_books(req):
     if(req.method == 'GET'):
@@ -50,43 +63,43 @@ def get_books(req):
                 'status': 'success'
             }, status = 422)
 
-    return HttpResponseNotAllowed()
 
+@require_http_methods(["POST"])
 @permission_required('books.add_books', raise_exception=True)
 def create_books(req):
-    if(req.method == 'POST'):
-        params = req.POST
-        title = params.get('title')
-        desc = params.get('description')
-        author = params.get('author')
-        stock = params.get('stock')
-        price = params.get('price')
-        try:
-            book = Books(
-                title=title,
-                description=desc,
-                author=author,
-                stock=stock,
-                price=price
-            )
-            book.save()
-            return JsonResponse({
-                'message': 'Successfully added the book to list',
-                'status': 'success'
-            }, status = 201)
-        except IntegrityError:
-            return JsonResponse({
-                'message': 'Please make sure you passed all the required fields',
-                'status': 'failure'
-            }, status = 412)
-        except Exception as e:
-            print(e)
-            return JsonResponse({
-                'message': 'Something went wrong while processing your reqeuest',
-                'status': 'failure'
-            }, status = 500)
-    return HttpResponseNotAllowed()
+    params = req.POST
+    title = params.get('title')
+    desc = params.get('description')
+    author = params.get('author')
+    stock = params.get('stock')
+    price = params.get('price')
+    try:
+        book = Books(
+            title=title,
+            description=desc,
+            author=author,
+            stock=stock,
+            price=price
+        )
+        book.save()
+        return JsonResponse({
+            'message': 'Successfully added the book to list',
+            'status': 'success'
+        }, status = 201)
+    except IntegrityError:
+        return JsonResponse({
+            'message': 'Please make sure you passed all the required fields',
+            'status': 'failure'
+        }, status = 412)
+    except Exception as e:
+        print(e)
+        return JsonResponse({
+            'message': 'Something went wrong while processing your reqeuest',
+            'status': 'failure'
+        }, status = 500)
 
+
+@require_http_methods(["POST"])
 @permission_required('books.change_books', raise_exception=True)
 def update_books(req):
     if(req.method == 'PUT'):
@@ -116,4 +129,65 @@ def update_books(req):
                 'message': 'Something went wrong while processing your reqeuest',
                 'status': 'failure'
             }, status = 422)
-    return HttpResponseNotAllowed()
+
+
+@require_http_methods(["POST"])
+@exception_handler
+def upload_product_data(request):
+    csv_file = request.FILES.get('product_data')
+    if not csv_file:
+        raise CustomException(400, 'File data is not available to process')
+    
+    file_name = csv_file.name
+    file_type = os.path.splitext(file_name)[1] if file_name else None
+    if not file_type or file_type.lower() != '.csv':
+        raise CustomException(400, 'Uploaded file is not a valid file type')
+    
+    cur_dir = os.getcwd()
+    batch_file_path = cur_dir + '/batches/'
+    if not os.path.exists(batch_file_path):
+        os.mkdir(batch_file_path)
+    temp_file_path = batch_file_path + file_name
+
+    with open(temp_file_path, 'wb+') as destination_file:
+        for chunk in csv_file.chunks():
+            destination_file.write(chunk)
+    
+    upload_data = upload_s3(BUCKET_NAME, file_name, temp_file_path)
+    os.remove(temp_file_path)
+    if upload_data == 200:
+        return JsonResponse({
+            'status': 'success'
+        }, status = 200)
+
+    return JsonResponse({
+        'message': 'Something went wrong while uploading your file to process',
+        'status': 'failure'
+    }, status = 422)
+
+
+@require_http_methods(["POST"])
+@exception_handler
+def process_product_data(request):
+    payload = json.loads(request.body)
+    product_data_url = payload.get('product_data_url')
+
+    if not product_data_url:
+        raise CustomException(412, 'product_data_url is necessary to process this request')
+    
+    if not is_valid_protocol(product_data_url):
+        raise CustomException(422, 'product_data_url must be a valid http protocol')
+
+    temp_file_path = create_write_path('process_batches', datetime.now())
+
+    product_data = requests.get(product_data_url)
+    with open(temp_file_path, 'wb+') as destination_file:
+        for chunk in product_data.chunks():
+            destination_file.write(chunk)
+
+    add_product_to_queue(temp_file_path)
+    os.remove(temp_file_path)
+
+    return JsonResponse({
+        'status': 'success'
+    })
