@@ -173,7 +173,7 @@ def process_product_data(request):
     payload = json.loads(request.body)
 
     if message_type in ('SubscriptionConfirmation', 'UnsubscribeConfirmation'):
-        subscriber_url = payload.get('SubscribeURL')z
+        subscriber_url = payload.get('SubscribeURL')
         print('subscriber url is: ', subscriber_url)
         return HttpResponse(status=200)
     elif message_type == 'Notification':
