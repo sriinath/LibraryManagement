@@ -171,11 +171,10 @@ def upload_product_data(request):
 def process_product_data(request):
     message_type = request.headers.get('x-amz-sns-message-type')
     payload = json.loads(request.body)
-    print(payload)
 
     if message_type in ('SubscriptionConfirmation', 'UnsubscribeConfirmation'):
-        subscriber_url = payload.get('SubscribeURL')
-        print('subscription url is :', subscriber_url)
+        subscriber_url = payload.get('SubscribeURL')z
+        print('subscriber url is: ', subscriber_url)
         return HttpResponse(status=200)
     elif message_type == 'Notification':
         s3_body = payload.get('Message', '')
