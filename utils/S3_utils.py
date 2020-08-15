@@ -1,5 +1,5 @@
 import boto3
-from utils import read_file_from_path
+from utils.utils import read_file_from_path
 
 def upload_s3(bucket_name, file_name, file_path, **kwargs):
     s3_client = boto3.client('s3')
