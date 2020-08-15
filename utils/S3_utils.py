@@ -26,11 +26,15 @@ def upload_s3(bucket_name, file_name, file_path, **kwargs):
 
 def get_object(bucket_name, key, **kwargs):
     version = kwargs.get('version', '')
+    resp_kwargs = dict()
+    if version:
+        resp_kwargs.update(VersionId=version)
+
     try:
         resp = s3_client.get_object(
             Bucket=bucket_name,
             Key=key,
-            VersionId=version
+            **resp_kwargs
         )
         status = resp.get('ResponseMetadata', {}).get('HTTPStatusCode', None)
         if status == 200:
