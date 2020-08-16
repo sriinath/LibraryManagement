@@ -144,7 +144,7 @@ def upload_product_data(request):
     if not file_type or file_type.lower() != '.csv':
         raise CustomException(400, 'Uploaded file is not a valid file type')
     
-    temp_file_path = create_write_path('/batches/', file_name)
+    temp_file_path = create_write_path('/batches/') + file_name
     with open(temp_file_path, 'wb+') as destination_file:
         for chunk in csv_file.chunks():
             destination_file.write(chunk)
@@ -182,7 +182,7 @@ def process_product_data(request):
                 if s3_key:
                     s3_object = get_object(BUCKET_NAME, s3_key)
                     temp_file_name = '{}_{}'.format(int(time.time()), s3_key)
-                    temp_file_path = create_write_path('/process_batches/', temp_file_name)
+                    temp_file_path = create_write_path('/process_batches/') + temp_file_name
 
                     with open(temp_file_path, 'wb+') as destination_file:
                         for chunk in s3_object.iter_chunks():

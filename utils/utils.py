@@ -33,12 +33,12 @@ def read_file_from_path(file_path, mode='buffer'):
 def is_valid_protocol(url):
     return url.startswith(('http://', 'https://'))
 
-def create_write_path(folder_path, file_name):
+def create_write_path(folder_path):
     cur_dir = os.getcwd()
     batch_file_path = cur_dir + folder_path
     if not os.path.exists(batch_file_path):
         os.mkdir(batch_file_path)
-    return batch_file_path + file_name
+    return batch_file_path
 
 def get_csv_contents(file_path):
     try:

@@ -1,7 +1,8 @@
 import os
 
 MAXIMUM_ITEMS_PER_QUEUE = 200
-QUEUE_URL = os.environ.get('QUEUE_URL')
+QUEUE_ENDPOINT = os.environ.get('QUEUE_ENDPOINT')
+QUEUE_URL = QUEUE_ENDPOINT + os.environ.get('QUEUE_URL')
 QUEUE_API_KEY = os.environ.get('QUEUE_API_KEY')
 QUEUE_HEADERS = {
     'Authorization': QUEUE_API_KEY
